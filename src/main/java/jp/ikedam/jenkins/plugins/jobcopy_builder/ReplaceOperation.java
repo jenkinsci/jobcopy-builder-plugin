@@ -1,6 +1,7 @@
 package jp.ikedam.jenkins.plugins.jobcopy_builder;
 
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.util.regex.Pattern;
 
 import org.w3c.dom.Document;
@@ -16,7 +17,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 /**
  * 設定ファイル内の文字列の置き換えをする。
  */
-public class ReplaceOperation extends JobcopyOperation
+public class ReplaceOperation extends JobcopyOperation implements Serializable
 {
     private static final long serialVersionUID = 1L;
     

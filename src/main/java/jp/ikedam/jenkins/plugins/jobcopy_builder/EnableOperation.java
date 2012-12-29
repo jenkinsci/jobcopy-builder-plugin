@@ -1,6 +1,7 @@
 package jp.ikedam.jenkins.plugins.jobcopy_builder;
 
 import java.io.PrintStream;
+import java.io.Serializable;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -14,7 +15,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 /**
  * ジョブを有効にする。
  */
-public class EnableOperation extends JobcopyOperation
+public class EnableOperation extends JobcopyOperation implements Serializable
 {
     private static final long serialVersionUID = 1L;
     

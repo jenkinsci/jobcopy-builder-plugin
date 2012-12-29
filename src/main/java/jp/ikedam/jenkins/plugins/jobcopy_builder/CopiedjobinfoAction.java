@@ -1,12 +1,14 @@
 package jp.ikedam.jenkins.plugins.jobcopy_builder;
 
+import java.io.Serializable;
+
 import hudson.model.TopLevelItem;
 import hudson.model.Action;
 
 /**
  * コピーされたジョブの情報
  */
-public class CopiedjobinfoAction implements Action
+public class CopiedjobinfoAction implements Action, Serializable
 {
     private static final long serialVersionUID = 1L;
     

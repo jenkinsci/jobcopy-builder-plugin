@@ -23,12 +23,13 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * ジョブをコピーするビルドステップ。
  * コピーするときの追加処理をプラグインで追加できる。
  */
-public class JobcopyBuilder extends Builder
+public class JobcopyBuilder extends Builder implements Serializable
 {
     private static final long serialVersionUID = 1L;
     
@@ -88,7 +89,7 @@ public class JobcopyBuilder extends Builder
      * ビルドジョブの実行
      */
     @Override
-    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener)
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
         throws IOException, InterruptedException
     {
         EnvVars env = build.getEnvironment(listener);
@@ -177,7 +178,8 @@ public class JobcopyBuilder extends Builder
         /**
          * 適用可能なジョブのフィルタ
          */
-        public boolean isApplicable(Class<? extends AbstractProject> jobType)
+        @SuppressWarnings("rawtypes")
+		public boolean isApplicable(Class<? extends AbstractProject> jobType)
         {
             return true;
         }
