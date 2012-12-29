@@ -1,0 +1,15 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<!--
+	ビルドの状態ページに表示される。
+-->
+    <t:summary icon="package.png">
+        <l:pane title="${%Copied Job}" width="3">
+            <f:entry title="${%Copied From}">
+                <a href="${baseURL}/${it.fromUrl}">${it.fromJobName}</a>
+            </f:entry>
+            <f:entry title="${%Copied To}">
+                <a href="${baseURL}/${it.toUrl}">${it.toJobName}</a>
+            </f:entry>
+        </l:pane>
+    </t:summary>
+</j:jelly>
