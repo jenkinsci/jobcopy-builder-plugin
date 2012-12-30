@@ -172,7 +172,7 @@ public class JobcopyBuilder extends Builder implements Serializable
          */
         public String getDisplayName()
         {
-            return Messages._JobCopyBuilder_DisplayName().toString();
+            return Messages.JobCopyBuilder_DisplayName();
         }
         
         /**

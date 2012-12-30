@@ -77,6 +77,6 @@ public class CopiedjobinfoAction implements Action, Serializable
      */
     @Override
     public String getDisplayName() {
-        return Messages._CopiedjobinfoAction_DisplayName().toString();
+        return Messages.CopiedjobinfoAction_DisplayName();
     }
 }

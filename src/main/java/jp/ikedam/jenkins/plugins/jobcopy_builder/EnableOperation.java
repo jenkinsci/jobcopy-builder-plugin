@@ -15,7 +15,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 /**
  * ジョブを有効にする。
  */
-public class EnableOperation extends JobcopyOperation implements Serializable
+public class EnableOperation extends AbstractXmlJobcopyOperation implements Serializable
 {
     private static final long serialVersionUID = 1L;
     
@@ -31,7 +31,7 @@ public class EnableOperation extends JobcopyOperation implements Serializable
         @Override
         public String getDisplayName()
         {
-            return Messages._EnableOperation_DisplayName().toString();
+            return Messages.EnableOperation_DisplayName();
         }
     }
     
@@ -47,12 +47,10 @@ public class EnableOperation extends JobcopyOperation implements Serializable
      * 変換したXMLを返す。
      */
     @Override
-    public String perform(String xmlString, String encoding, EnvVars env, PrintStream logger)
+    public Document perform(Document doc, EnvVars env, PrintStream logger)
     {
         logger.print("Enabling Job...");
         try{
-            Document doc = getXmlDocumentFromString(xmlString, encoding);
-            
             // 有効/無効の設定のノードを取得
             Node disabledNode = getNode(doc, "/*/disabled/text()");
             if(disabledNode == null){
@@ -66,7 +64,7 @@ public class EnableOperation extends JobcopyOperation implements Serializable
             logger.println(path + ": " + disabledNode.getNodeValue() + " -> false");
             disabledNode.setNodeValue("false");
             
-            return getXmlString(doc);
+            return doc;
         }catch(Exception e){
             logger.print("Error occured in XML operation");
             e.printStackTrace(logger);

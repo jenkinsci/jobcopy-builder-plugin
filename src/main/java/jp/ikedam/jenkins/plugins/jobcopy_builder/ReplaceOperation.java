@@ -17,7 +17,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 /**
  * 設定ファイル内の文字列の置き換えをする。
  */
-public class ReplaceOperation extends JobcopyOperation implements Serializable
+public class ReplaceOperation extends AbstractXmlJobcopyOperation implements Serializable
 {
     private static final long serialVersionUID = 1L;
     
@@ -33,7 +33,7 @@ public class ReplaceOperation extends JobcopyOperation implements Serializable
         @Override
         public String getDisplayName()
         {
-            return Messages._ReplaceOperation_DisplayName().toString();
+            return Messages.ReplaceOperation_DisplayName();
         }
     }
     
@@ -90,19 +90,15 @@ public class ReplaceOperation extends JobcopyOperation implements Serializable
      * 変換したXMLを返す。
      */
     @Override
-    public String perform(String xmlString, String encoding, EnvVars env, PrintStream logger){
+    public Document perform(Document doc, EnvVars env, PrintStream logger){
         String expandedFromStr = isExpandFromStr()?env.expand(getFromStr()):getFromStr();
         String expandedToStr = isExpandToStr()?env.expand(getToStr()):getToStr();
         
         // String.replaceは正規表現としてあつかわれるため、正規表現のエスケープをしておく
         String pattern = Pattern.quote(expandedFromStr);
         
-        //return xmlString.replaceAll(pattern, expandedToStr);
-        
         logger.print("Replacing: " + expandedFromStr + " -> " + expandedToStr);
         try{
-            Document doc = getXmlDocumentFromString(xmlString, encoding);
-            
             // 全てのテキストノードを取得
             NodeList textNodeList = getNodeList(doc, "//text()");
             
@@ -114,7 +110,7 @@ public class ReplaceOperation extends JobcopyOperation implements Serializable
             }
             logger.println("");
             
-            return getXmlString(doc);
+            return doc;
         }catch(Exception e){
             logger.print("Error occured in XML operation");
             e.printStackTrace(logger);
