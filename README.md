@@ -1,7 +1,7 @@
 Job Copy Builder plugin
 =======================
 
-[Japanese version of this document can be found here.] (README_ja.md)
+Japanese version of this document is README_ja.md
 
 Jenkins plugin to copy a job in a build step.
 
