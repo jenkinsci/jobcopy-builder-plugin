@@ -170,6 +170,7 @@ public class JobcopyBuilder extends Builder implements Serializable
         /**
          * 表示名
          */
+        @Override
         public String getDisplayName()
         {
             return Messages.JobCopyBuilder_DisplayName();
@@ -179,6 +180,7 @@ public class JobcopyBuilder extends Builder implements Serializable
          * 適用可能なジョブのフィルタ
          */
         @SuppressWarnings("rawtypes")
+        @Override
 		public boolean isApplicable(Class<? extends AbstractProject> jobType)
         {
             return true;
