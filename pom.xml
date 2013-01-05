@@ -8,11 +8,44 @@
 
   <groupId>jp.ikedam.jenkins.plugins</groupId>
   <artifactId>jobcopy-builder</artifactId>
-  <version>0.1</version>
+  <version>0.1.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
-  <name>Jobcopy Builder</name>
-  <url>http://dev.ikedam.jp/jenkins/jobcopy-builder/</url>
+  <name>Jobcopy Builder plugin</name>
+  <description>Jenkins plugin to copy a job in a build step.</description>
 
+  <url>http://dev.ikedam.jp/jenkins/jobcopy-builder/</url>
+  <!-- TODO: replace with the URL in wiki.jenkins-ci.org
+  <url>http://wiki.jenkins-ci.org/display/JENKINS/Jobcopy+Builder+Plugin</url>
+  -->
+  
+  <!--  TODO: activate here after the git repository is created.
+  <scm>
+    <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
+    <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
+  </scm>
+  -->
+  
+  <developers>
+    <developer>
+      <id>ikedam</id>
+      <name>IKEDA Yasuyuki</name>
+    </developer>
+  </developers>
+  
+  <licenses>
+    <license>
+      <name>The MIT license</name>
+      <url>http://www.opensource.org/licenses/mit-license.php</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+  </properties>
+  
   <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
   <repositories>
     <repository>
