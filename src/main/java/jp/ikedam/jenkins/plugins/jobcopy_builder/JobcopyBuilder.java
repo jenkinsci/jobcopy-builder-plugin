@@ -37,11 +37,14 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.util.ComboBoxModel;
+import hudson.util.FormValidation;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import jenkins.model.Jenkins;
 
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
@@ -143,8 +146,8 @@ public class JobcopyBuilder extends Builder implements Serializable
     @DataBoundConstructor
     public JobcopyBuilder(String fromJobName, String toJobName, boolean overwrite, List<JobcopyOperation> jobcopyOperationList)
     {
-        this.fromJobName = fromJobName;
-        this.toJobName = toJobName;
+        this.fromJobName = StringUtils.trim(fromJobName);
+        this.toJobName = StringUtils.trim(toJobName);
         this.overwrite = overwrite;
         this.jobcopyOperationList = jobcopyOperationList;
     }
@@ -166,13 +169,35 @@ public class JobcopyBuilder extends Builder implements Serializable
     {
         EnvVars env = build.getEnvironment(listener);
         
+        if(StringUtils.isBlank(fromJobName))
+        {
+            listener.getLogger().println("From Job Name is not specified");
+            return false;
+        }
+        if(StringUtils.isBlank(toJobName))
+        {
+            listener.getLogger().println("To Job Name is not specified");
+            return false;
+        }
+        
         // Expand the variable expressions in job names.
         String fromJobNameExpanded = env.expand(fromJobName);
         String toJobNameExpanded = env.expand(toJobName);
         
+        if(StringUtils.isBlank(fromJobNameExpanded))
+        {
+            listener.getLogger().println("From Job Name got to a blank");
+            return false;
+        }
+        if(StringUtils.isBlank(toJobNameExpanded))
+        {
+            listener.getLogger().println("To Job Name got to a blank");
+            return false;
+        }
+        
         listener.getLogger().println(String.format("Copying %s to %s", fromJobNameExpanded, toJobNameExpanded));
         
-        // Retieve the job to be copied from.
+        // Reteive the job to be copied from.
         TopLevelItem fromJob = Jenkins.getInstance().getItem(fromJobNameExpanded);
         
         if(fromJob == null)
@@ -252,8 +277,6 @@ public class JobcopyBuilder extends Builder implements Serializable
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder>
     {
-        // TODO: Form validation
-        
         /**
          * Returns the display name
          * 
@@ -306,6 +329,131 @@ public class JobcopyBuilder extends Builder implements Serializable
         public ComboBoxModel doFillFromJobNameItems()
         {
             return new ComboBoxModel(Jenkins.getInstance().getTopLevelItemNames());
+        }
+        
+        /**
+         * Returns whether the value contains variable.
+         * 
+         * @param value value to be tested.
+         * @return whether the value contains variable
+         */
+        private boolean containsVariable(String value)
+        {
+            if(StringUtils.isBlank(value) || !value.contains("$")){
+                // apparently contains no variable.
+                return false;
+            }
+            
+            return true;
+        }
+        
+        /**
+         * Validate "From Job Name" or "To Job Name" field.
+         * 
+         * Returns as following:
+         * <table>
+         *     <tr>
+         *         <th>jobName</th>
+         *         <th>warnIfExists</th>
+         *         <th>warnIfNotExists</th>
+         *         <th>Returns</th>
+         *     </tr>
+         *     <tr>
+         *         <td>Blank</th>
+         *         <th>any</th>
+         *         <th>any</th>
+         *         <td>error</td>
+         *     </tr>
+         *     <tr>
+         *         <td>value containing variables</th>
+         *         <th>any</th>
+         *         <th>any</th>
+         *         <td>ok</td>
+         *     </tr>
+         *     <tr>
+         *         <td>existing job</th>
+         *         <th>false</th>
+         *         <th>any</th>
+         *         <td>ok</td>
+         *     </tr>
+         *     <tr>
+         *         <td>existing job</th>
+         *         <th>true</th>
+         *         <th>any</th>
+         *         <td>warning</td>
+         *     </tr>
+         *     <tr>
+         *         <td>non existing job</th>
+         *         <th>any</th>
+         *         <th>false</th>
+         *         <td>ok</td>
+         *     </tr>
+         *     <tr>
+         *         <td>non existing job</th>
+         *         <th>any</th>
+         *         <th>true</th>
+         *         <td>warning</td>
+         *     </tr>
+         * </table>
+         * 
+         * @param jobName
+         * @param warnIfExists
+         * @param warnIfNotExists
+         * @return
+         */
+        public FormValidation doCheckJobName(String jobName, boolean warnIfExists, boolean warnIfNotExists)
+        {
+            if(StringUtils.isBlank(jobName))
+            {
+                return FormValidation.error(Messages.JobCopyBuilder_JobName_empty());
+            }
+            if(containsVariable(jobName))
+            {
+                return FormValidation.ok();
+            }
+            
+            TopLevelItem job = Jenkins.getInstance().getItem(jobName);
+            if(job != null)
+            {
+                // job exists
+                if(warnIfExists)
+                {
+                    return FormValidation.warning(Messages.JobCopyBuilder_JobName_exists());
+                }
+            }
+            else
+            {
+                // job does not exist
+                if(warnIfNotExists)
+                {
+                    return FormValidation.warning(Messages.JobCopyBuilder_JobName_notExists());
+                }
+            }
+            
+            return FormValidation.ok();
+        }
+        
+        /**
+         * Validate "From Job Name" field.
+         * 
+         * @param fromJobName
+         * @return
+         */
+        public FormValidation doCheckFromJobName(@QueryParameter String fromJobName)
+        {
+            return doCheckJobName(fromJobName, false, true);
+        }
+        
+        /**
+         * Validate "To Job Name" field.
+         * 
+         * @param toJobName
+         * @param overwrite
+         * @return FormValidation object.
+         */
+        public FormValidation doCheckToJobName(@QueryParameter String toJobName, @QueryParameter boolean overwrite)
+        {
+            return doCheckJobName(toJobName, !overwrite, false);
         }
     }
 }

@@ -34,8 +34,11 @@ import org.w3c.dom.NodeList;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.util.FormValidation;
 
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 /**
  * Replace the string in the configuration.
@@ -67,6 +70,40 @@ public class ReplaceOperation extends AbstractXmlJobcopyOperation implements Ser
         public String getDisplayName()
         {
             return Messages.ReplaceOperation_DisplayName();
+        }
+        
+        /**
+         * Validate the value input to "From String"
+         * 
+         * @param fromStr
+         * @return FormValidation object.
+         */
+        public FormValidation doCheckFromStr(@QueryParameter String fromStr, @QueryParameter boolean expandFromStr)
+        {
+            if(StringUtils.isEmpty(fromStr))
+            {
+                return FormValidation.error(Messages.ReplaceOperation_fromStr_empty());
+            }
+            
+            String trimmed = StringUtils.trim(fromStr);
+            if(!trimmed.equals(fromStr))
+            {
+                return FormValidation.warning(Messages.ReplaceOperation_fromStr_enclosedWithBlank());
+            }
+            
+            return FormValidation.ok();
+        }
+        
+        /**
+         * Validate the value input to "From String"
+         * 
+         * @param fromStr
+         * @return FormValidation object.
+         */
+        public FormValidation doCheckToStr(@QueryParameter String toStr, @QueryParameter boolean expandToStr)
+        {
+            // Nothing to check.
+            return FormValidation.ok();
         }
     }
     
@@ -154,8 +191,25 @@ public class ReplaceOperation extends AbstractXmlJobcopyOperation implements Ser
     @Override
     public Document perform(Document doc, EnvVars env, PrintStream logger)
     {
-        String expandedFromStr = isExpandFromStr()?env.expand(getFromStr()):getFromStr();
-        String expandedToStr = isExpandToStr()?env.expand(getToStr()):getToStr();
+        String fromStr = getFromStr();
+        String toStr = getToStr();
+        
+        if(StringUtils.isEmpty(fromStr))
+        {
+            logger.println("From String is empty");
+            return null;
+        }
+        if(toStr == null)
+        {
+            toStr = "";
+        }
+        String expandedFromStr = isExpandFromStr()?env.expand(fromStr):fromStr;
+        String expandedToStr = isExpandToStr()?env.expand(toStr):toStr;
+        if(StringUtils.isEmpty(expandedFromStr))
+        {
+            logger.println("From String got to be empty");
+            return null;
+        }
         
         // String.replace treats the parameter as a regular expression,
         // so the escaping of special characters of regular expressions are needed.
