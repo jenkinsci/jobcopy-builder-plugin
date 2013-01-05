@@ -1,3 +1,26 @@
+/*
+ * The MIT License
+ * 
+ * Copyright (c) 2012-2013 IKEDA Yasuyuki
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package jp.ikedam.jenkins.plugins.jobcopy_builder;
 
 import hudson.EnvVars;
@@ -30,21 +53,30 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
- * ジョブをコピーするときの処理をXML DOMで行うための抽象クラス。
+ * Abstract class for job copy operation using XML DOM.
+ * @see jp.ikedam.jenkins.plugins.jobcopy_builder.JobcopyOperation
  */
 public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
 {
     /**
-     * XML Document に対して変換処理を行い、変換後のXML Documentを返す
-     * @param doc 変換対象のXML Document
-     * @param env ビルドで定義されている変数
-     * @param logger ログ出力
-     * @return 変換後のXML Document
+     * Performs modifications to job configure XML Document.
+     * 
+     * @param doc       XML Document of the job to be copied (job/NAME/config.xml)
+     * @param env       Variables defined in the build.
+     * @param logger    The output stream to log.
+     * @return          modified XML Document. Return null if an error occurs.
      */
     public abstract Document perform(Document doc, EnvVars env, PrintStream logger);
     
     /**
-     * 変換したXMLを返す。
+     * Returns modified XML string of the job configuration.
+     * 
+     * @param xmlString the XML string  of the job to be copied (job/NAME/config.xml)
+     * @param encoding  the encoding of the XML.
+     * @param env       Variables defined in the build.
+     * @param logger    The output stream to log.
+     * @return          modified XML string. Returns null if an error occurs.
+     * @see jp.ikedam.jenkins.plugins.jobcopy_builder.JobcopyOperation#perform(java.lang.String, java.lang.String, hudson.EnvVars, java.io.PrintStream)
      */
     @Override
     public String perform(String xmlString, String encoding, EnvVars env, PrintStream logger)
@@ -62,6 +94,11 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
         }
         
         Document newDoc = perform(doc, env, logger);
+        if(newDoc == null)
+        {
+            // It seems that an error occurred in XML processing.
+            return null;
+        }
         
         try
         {
@@ -76,7 +113,11 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
     }
     
     /**
-     * XML DocumentからXMLファイルの中身を取得する
+     * Retrieve the XML string from XML Document object
+     * 
+     * @param doc   the XML Document object.
+     * @return      the XML string
+     * @throws TransformerException
      */
     private String getXmlString(Document doc)
         throws TransformerException
@@ -92,7 +133,15 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
     }
     
     /**
-     * 文字列からXML Documentオブジェクトを取得する
+     * Construct a XML Document object from a XML string.
+     * 
+     * @param xmlString     a XML string.
+     * @param encoding      encoding of xmlString.
+     * @return              Constructed XML Document object.
+     * @throws ParserConfigurationException
+     * @throws UnsupportedEncodingException
+     * @throws SAXException
+     * @throws IOException
      */
     private Document getXmlDocumentFromString(String xmlString, String encoding)
         throws ParserConfigurationException,UnsupportedEncodingException,SAXException,IOException
@@ -105,17 +154,29 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
         return builder.parse(is);
     }
     
+    /****** Utility methods working with XML. Usable from subclasses. ******/
     
-    /* XML関係のユーティリティメソッド群 */
     /**
-     * XML Documentオブジェクトからxpathで特定のノードを取得する
+     * Retrieve a XML node using XPath.
+     * 
+     * Returns null in following cases:
+     * <ul>
+     *      <li>No node found.</li>
+     *      <li>More than one node found.</li>
+     * </ul>
+     * 
+     * @param doc       the XML Document object.
+     * @param xpath     a XPath specifying the retrieving node.
+     * @return          the retrieved node.
+     * @throws XPathExpressionException
      */
     protected Node getNode(Document doc, String xpath)
         throws XPathExpressionException
     {
         NodeList nodeList = getNodeList(doc, xpath);
         
-        if(nodeList.getLength() != 1){
+        if(nodeList.getLength() != 1)
+        {
             return null;
         }
         
@@ -123,7 +184,12 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
     }
 
     /**
-     * XML Documentオブジェクトからxpathで特定のノード群を取得する
+     * Retrieve a XML node list using XPath.
+     * 
+     * @param doc               the XML Document object.
+     * @param xpathExpression   a XPath specifying the retrieving nodes.
+     * @return                  retrieved nodes in NodeList
+     * @throws XPathExpressionException
      */
     protected NodeList getNodeList(Document doc, String xpathExpression)
         throws XPathExpressionException
@@ -136,12 +202,21 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
     }
     
     /**
-     * ノードからXpathを取得する
+     * Retrieve a XPath expression of a node.
+     * 
+     * Use only for displaying purposes only.
+     * For this works not so strict, 
+     * the return value supposes not to work proper
+     * with XPath processors.
+     * 
+     * @param targetNode  a node whose XPath expression is retrieved.
+     * @return            XPath expression.
      */
     protected String getXpath(Node targetNode)
     {
         StringBuilder pathBuilder = new StringBuilder();
-        for(Node node = targetNode; node != null; node = node.getParentNode()){
+        for(Node node = targetNode; node != null; node = node.getParentNode())
+        {
             pathBuilder.insert(0, node.getNodeName());
             pathBuilder.insert(0, '/');
         }

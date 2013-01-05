@@ -1,3 +1,26 @@
+/*
+ * The MIT License
+ * 
+ * Copyright (c) 2012-2013 IKEDA Yasuyuki
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package jp.ikedam.jenkins.plugins.jobcopy_builder;
 
 import java.util.List;
@@ -26,55 +49,96 @@ import java.io.IOException;
 import java.io.Serializable;
 
 /**
- * ジョブをコピーするビルドステップ。
- * コピーするときの追加処理をプラグインで追加できる。
+ * A build step to copy a job.
+ * 
+ * You can specify additional operations that is performed when copying,
+ * and the operations can be extended with plugins using Extension Points.
  */
 public class JobcopyBuilder extends Builder implements Serializable
 {
     private static final long serialVersionUID = 1L;
     
-    /**
-     * コピー元のジョブ名。変数展開する。
-     */
     private String fromJobName;
     
+    /**
+     * Returns the name of job to be copied from.
+     * 
+     * Variable expressions will be expanded.
+     * 
+     * @return the name of job to be copied from
+     */
     public String getFromJobName()
     {
         return fromJobName;
     }
     
-    /**
-     * コピー先のジョブ名。変数展開する。
-     */
     private String toJobName;
     
+    /**
+     * Returns the name of job to be copied to.
+     * 
+     * Variable expressions will be expanded.
+     * 
+     * @return the name of job to be copied to
+     */
     public String getToJobName()
     {
         return toJobName;
     }
     
-    /**
-     * ジョブを上書きするか？
-     */
     private boolean overwrite = false;
     
+    /**
+     * Returns whether to overwrite an existing job.
+     * 
+     * If the copied-to job is already exists,
+     * jobcopy build step works as following depending on this value.
+     * <table>
+     *     <tr>
+     *         <th>isOverwrite</th>
+     *         <th>behavior</th>
+     *     </tr>
+     *     <tr>
+     *         <td>true</td>
+     *         <td>Delete the existing job, and create a new job.</td>
+     *     </tr>
+     *     <tr>
+     *         <td>false</td>
+     *         <td>Build fails.</td>
+     *     </tr>
+     * </table>
+     * 
+     * @return whether to overwrite an existing job.
+     */
     public boolean isOverwrite()
     {
         return overwrite;
     }
     
-    /**
-     * 実行する処理のリスト
-     */
     private List<JobcopyOperation> jobcopyOperationList;
     
+    /**
+     * Returns the list of operations.
+     * 
+     * @return the list of operations
+     */
     public List<JobcopyOperation> getJobcopyOperationList()
     {
         return jobcopyOperationList;
     }
     
     /**
-     * 設定画面の入力からオブジェクトを作成するときに使用するコンストラクタ
+     * Constructor to instantiate from parameters in the job configuration page.
+     * 
+     * When instantiating from the saved configuration,
+     * the object is directly serialized with XStream,
+     * and no constructor is used.
+     * 
+     * @param fromJobName   a name of a job to be copied from. may contains variable expressions.
+     * @param toJobName     a name of a job to be copied to. may contains variable expressions.
+     * @param overwrite     whether to overwrite if the job to be copied to is already existing.
+     * @param jobcopyOperationList
+     *                      the list of operations to be performed when copying.
      */
     @DataBoundConstructor
     public JobcopyBuilder(String fromJobName, String toJobName, boolean overwrite, List<JobcopyOperation> jobcopyOperationList)
@@ -86,7 +150,15 @@ public class JobcopyBuilder extends Builder implements Serializable
     }
     
     /**
-     * ビルドジョブの実行
+     * Performs the build step.
+     * 
+     * @param build
+     * @param launcher
+     * @param listener
+     * @return  whether the process succeeded.
+     * @throws IOException
+     * @throws InterruptedException
+     * @see hudson.tasks.BuildStepCompatibilityLayer#perform(hudson.model.AbstractBuild, hudson.Launcher, hudson.model.BuildListener)
      */
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
@@ -94,81 +166,101 @@ public class JobcopyBuilder extends Builder implements Serializable
     {
         EnvVars env = build.getEnvironment(listener);
         
-        // ジョブ名の解決
+        // Expand the variable expressions in job names.
         String fromJobNameExpanded = env.expand(fromJobName);
         String toJobNameExpanded = env.expand(toJobName);
         
-        listener.getLogger().println("Copying " + fromJobNameExpanded + " to " + toJobNameExpanded);
+        listener.getLogger().println(String.format("Copying %s to %s", fromJobNameExpanded, toJobNameExpanded));
         
-        // コピー元ジョブの同定
+        // Retieve the job to be copied from.
         TopLevelItem fromJob = Jenkins.getInstance().getItem(fromJobNameExpanded);
         
         if(fromJob == null)
         {
             listener.getLogger().println("Error: Item was not found.");
             return false;
-        }else if(!(fromJob instanceof Job<?,?>)){
+        }
+        else if(!(fromJob instanceof Job<?,?>))
+        {
             listener.getLogger().println("Error: Item was found, but is not a job.");
             return false;
         }
         
-        // コピー先ジョブの同定
+        // Check whether the job to be copied to is already exists.
         TopLevelItem toJob = Jenkins.getInstance().getItem(toJobNameExpanded);
         if(toJob != null){
-            listener.getLogger().println("Already exists: " + toJobNameExpanded);
+            listener.getLogger().println(String.format("Already exists: %s", toJobNameExpanded));
             if(!isOverwrite()){
                 return false;
             }
         }
         
-        // コピー元ジョブのXMLの取得
-        listener.getLogger().println("Fetching configuration of " + fromJobNameExpanded + "...");
+        // Retrieve the config.xml of the job copied from.
+        // TODO: what happens if this runs on a slave node?
+        listener.getLogger().println(String.format("Fetching configuration of %s...", fromJobNameExpanded));
         
         XmlFile file = ((Job<?,?>)fromJob).getConfigFile();
         String jobConfigXmlString = file.asString();
         String encoding = file.sniffEncoding();
         listener.getLogger().println("Original xml:");
-        listener.getLogger().print(jobConfigXmlString);
-        listener.getLogger().println("");
+        listener.getLogger().println(jobConfigXmlString);
         
-        // XMLの変換処理
-        for(JobcopyOperation operation: getJobcopyOperationList()){
+        // Apply additional operations to the retrieved XML.
+        for(JobcopyOperation operation: getJobcopyOperationList())
+        {
             jobConfigXmlString = operation.perform(jobConfigXmlString, encoding, env, listener.getLogger());
-            if(jobConfigXmlString == null){
+            if(jobConfigXmlString == null)
+            {
                 return false;
             }
         }
         listener.getLogger().println("Copied xml:");
-        listener.getLogger().print(jobConfigXmlString);
-        listener.getLogger().println("");
+        listener.getLogger().println(jobConfigXmlString);
         
-        // コピー先のジョブの削除(存在する場合)
-        if(toJob != null){
+        // Remove the job copied to (only if it already exists)
+        if(toJob != null)
+        {
             toJob.delete();
-            listener.getLogger().println("Deleted " + toJobNameExpanded);
+            listener.getLogger().println(String.format("Deleted %s", toJobNameExpanded));
         }
         
-        // コピー先のジョブの作成
-        listener.getLogger().println("Creating " + toJobNameExpanded);
+        // Create the job copied to.
+        listener.getLogger().println(String.format("Creating %s", toJobNameExpanded));
         InputStream is = new ByteArrayInputStream(jobConfigXmlString.getBytes(encoding)); 
         toJob = Jenkins.getInstance().createProjectFromXML(toJobNameExpanded, is);
-        if(toJob == null){
-            listener.getLogger().println("Failed to create " + toJobNameExpanded);
+        if(toJob == null)
+        {
+            listener.getLogger().println(String.format("Failed to create %s", toJobNameExpanded));
             return false;
         }
+        
+        // add the information of jobs copied from and to to the build.
         build.addAction(new CopiedjobinfoAction(fromJob, toJob));
         
         return true;
     }
     
     /**
-     * ビューとの対応付けをするための定義
+     * The internal class to work with views.
+     * 
+     * The following files are used (put in main/resource directory in the source tree).
+     * <dl>
+     *     <dt>config.jelly</dt>
+     *         <dd>shown as a part of a job configuration page.</dd>
+     * </dl>
      */
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder>
     {
+        // TODO: Form validation
+        
         /**
-         * 表示名
+         * Returns the display name
+         * 
+         * Displayed in the "Add build step" dropdown in a job configuration page. 
+         * 
+         * @return the display name
+         * @see hudson.model.Descriptor#getDisplayName()
          */
         @Override
         public String getDisplayName()
@@ -177,7 +269,13 @@ public class JobcopyBuilder extends Builder implements Serializable
         }
         
         /**
-         * 適用可能なジョブのフィルタ
+         * Test whether this build step can be applied to the specified job type.
+         * 
+         * This build step works for any type of jobs, for always returns true.
+         * 
+         * @param jobType the type of the job to be tested.
+         * @return true
+         * @see hudson.tasks.BuildStepDescriptor#isApplicable(java.lang.Class)
          */
         @SuppressWarnings("rawtypes")
         @Override
@@ -187,7 +285,11 @@ public class JobcopyBuilder extends Builder implements Serializable
         }
         
         /**
-         * 利用可能なJobcopyOperationの一覧を返す
+         * Returns all the available JobcopyOperation.
+         * 
+         * Used for the contents of "Add Copy Operation" dropdown.
+         * 
+         * @return the list of JobcopyOperation
          */
         public DescriptorExtensionList<JobcopyOperation,Descriptor<JobcopyOperation>> getJobcopyOperationDescriptors()
         {
@@ -195,13 +297,16 @@ public class JobcopyBuilder extends Builder implements Serializable
         }
         
         /**
-         * コピー元のジョブとして選択可能なジョブの一覧を返す。
+         * Returns the list of jobs.
+         * 
+         * Used for the autocomplete of From Job Name.
+         * 
+         * @return the list of jobs
          */
         public ComboBoxModel doFillFromJobNameItems()
         {
             return new ComboBoxModel(Jenkins.getInstance().getTopLevelItemNames());
         }
-        
     }
 }
 
