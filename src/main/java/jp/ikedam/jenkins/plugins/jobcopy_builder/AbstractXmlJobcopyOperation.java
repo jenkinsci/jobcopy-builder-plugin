@@ -50,7 +50,10 @@ import javax.xml.xpath.XPathFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
+import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 /**
  * Abstract class for job copy operation using XML DOM.
@@ -84,7 +87,7 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
         Document doc;
         try
         {
-            doc = getXmlDocumentFromString(xmlString, encoding);
+            doc = getXmlDocumentFromString(xmlString, encoding, logger);
         }
         catch (Exception e)
         {
@@ -143,13 +146,37 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
      * @throws SAXException
      * @throws IOException
      */
-    private Document getXmlDocumentFromString(String xmlString, String encoding)
+    private Document getXmlDocumentFromString(String xmlString, String encoding, final PrintStream logger)
         throws ParserConfigurationException,UnsupportedEncodingException,SAXException,IOException
     {
         DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance();
         //domFactory.setNamespaceAware(true);
         DocumentBuilder builder = domFactory.newDocumentBuilder();
-        InputStream is = new ByteArrayInputStream(xmlString.getBytes(encoding)); 
+        builder.setErrorHandler(new ErrorHandler(){
+            @Override
+            public void warning(SAXParseException exception)
+                    throws SAXException
+            {
+                exception.printStackTrace(logger);
+            }
+            
+            @Override
+            public void error(SAXParseException exception) throws SAXException
+            {
+                exception.printStackTrace(logger);
+            }
+            
+            @Override
+            public void fatalError(SAXParseException exception)
+                    throws SAXException
+            {
+                exception.printStackTrace(logger);
+            }
+        });
+        InputStream is = new ByteArrayInputStream((encoding != null)?
+                xmlString.getBytes(encoding)
+                :xmlString.getBytes()
+                ); 
         
         return builder.parse(is);
     }
@@ -215,10 +242,18 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
     protected String getXpath(Node targetNode)
     {
         StringBuilder pathBuilder = new StringBuilder();
-        for(Node node = targetNode; node != null; node = node.getParentNode())
+        for(Node node = targetNode; node != null && !(node instanceof Document); node = node.getParentNode())
         {
-            pathBuilder.insert(0, node.getNodeName());
-            pathBuilder.insert(0, '/');
+            if(node instanceof Text)
+            {
+                pathBuilder.insert(0, "text()");
+                pathBuilder.insert(0, '/');
+            }
+            else
+            {
+                pathBuilder.insert(0, node.getNodeName());
+                pathBuilder.insert(0, '/');
+            }
         }
         return pathBuilder.toString();
     }
