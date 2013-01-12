@@ -302,7 +302,7 @@ public class JobcopyBuilder extends Builder implements Serializable
          */
         @SuppressWarnings("rawtypes")
         @Override
-		public boolean isApplicable(Class<? extends AbstractProject> jobType)
+        public boolean isApplicable(Class<? extends AbstractProject> jobType)
         {
             return true;
         }
@@ -403,6 +403,8 @@ public class JobcopyBuilder extends Builder implements Serializable
          */
         public FormValidation doCheckJobName(String jobName, boolean warnIfExists, boolean warnIfNotExists)
         {
+            jobName = StringUtils.trim(jobName);
+            
             if(StringUtils.isBlank(jobName))
             {
                 return FormValidation.error(Messages.JobCopyBuilder_JobName_empty());
