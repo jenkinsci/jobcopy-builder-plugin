@@ -62,7 +62,7 @@ public class CopiedjobinfoActionJenkinsTest extends HudsonTestCase
         FreeStyleBuild build = job.scheduleBuild2(job.getQuietPeriod(), new Cause.UserIdCause(), action).get();
         
         // Wait for build is completed.
-        while(!build.isBuilding())
+        while(build.isBuilding())
         {
             Thread.sleep(100);
         }
@@ -74,13 +74,13 @@ public class CopiedjobinfoActionJenkinsTest extends HudsonTestCase
             
             // contains link to from job.
             {
-                List<Object> nodes = page.getByXPath(String.format("//a[ends-with(@href, '%s'", fromJobUrl));
+                List<Object> nodes = page.getByXPath(String.format("//a[%s]", getEndsWithXpath("@href", fromJobUrl)));
                 assertNotNull(nodes);
                 assertTrue(nodes.size() > 0);
             }
             // contains link to to job.
             {
-                List<Object> nodes = page.getByXPath(String.format("//a[ends-with(@href, '%s'", toJobUrl));
+                List<Object> nodes = page.getByXPath(String.format("//a[%s]", getEndsWithXpath("@href", toJobUrl)));
                 assertNotNull(nodes);
                 assertTrue(nodes.size() > 0);
             }
@@ -94,16 +94,22 @@ public class CopiedjobinfoActionJenkinsTest extends HudsonTestCase
             
             // contains link to from job.
             {
-                List<Object> nodes = page.getByXPath(String.format("//a[ends-with(@href, '%s'", fromJobUrl));
+                List<Object> nodes = page.getByXPath(String.format("//a[%s]", getEndsWithXpath("@href", fromJobUrl)));
                 assertNotNull(nodes);
                 assertTrue(nodes.size() > 0);
             }
             // contains link to to job.
             {
-                List<Object> nodes = page.getByXPath(String.format("//a[ends-with(@href, '%s'", toJobUrl));
+                List<Object> nodes = page.getByXPath(String.format("//a[%s]", getEndsWithXpath("@href", toJobUrl)));
                 assertNotNull(nodes);
                 assertTrue(nodes.size() > 0);
             }
         }
+    }
+    
+    // Xpath 1.0 does not support ends-with, so do same with other functions.
+    private String getEndsWithXpath(String nodeExp, String value)
+    {
+        return String.format("substring(%s, string-length(%s) - string-length('%s') + 1) = '%s'", nodeExp, nodeExp, value, value);
     }
 }
