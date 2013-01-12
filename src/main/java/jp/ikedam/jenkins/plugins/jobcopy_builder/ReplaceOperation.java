@@ -25,7 +25,6 @@ package jp.ikedam.jenkins.plugins.jobcopy_builder;
 
 import java.io.PrintStream;
 import java.io.Serializable;
-import java.util.regex.Pattern;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -210,10 +209,10 @@ public class ReplaceOperation extends AbstractXmlJobcopyOperation implements Ser
             logger.println("From String got to be empty");
             return null;
         }
-        
-        // String.replace treats the parameter as a regular expression,
-        // so the escaping of special characters of regular expressions are needed.
-        String pattern = Pattern.quote(expandedFromStr);
+        if(expandedToStr == null)
+        {
+            expandedToStr = "";
+        }
         
         logger.print("Replacing: " + expandedFromStr + " -> " + expandedToStr);
         try
@@ -226,7 +225,7 @@ public class ReplaceOperation extends AbstractXmlJobcopyOperation implements Ser
             for(int i = 0; i < textNodeList.getLength(); ++i)
             {
                 Node node = textNodeList.item(i);
-                node.setNodeValue(node.getNodeValue().replaceAll(pattern, expandedToStr));
+                node.setNodeValue(StringUtils.replace(node.getNodeValue(), expandedFromStr, expandedToStr));
             }
             logger.println("");
             
