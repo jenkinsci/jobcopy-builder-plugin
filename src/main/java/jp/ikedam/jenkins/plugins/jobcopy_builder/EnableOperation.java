@@ -96,14 +96,14 @@ public class EnableOperation extends AbstractXmlJobcopyOperation implements Seri
         try
         {
             // Retrieve the node holding the enable/disable configuration. 
-            Node disabledNode = getNode(doc, "/*/disabled/text()");
+            Node disabledNode = getNode(doc, "/*/disabled");
             if(disabledNode == null){
                 logger.println("Failed to fetch disabled node.");
                 return null;
             }
             
-            logger.println(String.format("%s: %s -> false", getXpath(disabledNode), disabledNode.getNodeValue()));
-            disabledNode.setNodeValue("false");
+            logger.println(String.format("%s: %s -> false", getXpath(disabledNode), disabledNode.getTextContent()));
+            disabledNode.setTextContent("false");
             
             return doc;
         }catch(Exception e){
