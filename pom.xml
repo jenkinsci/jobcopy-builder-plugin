@@ -8,7 +8,7 @@
 
   <groupId>jp.ikedam.jenkins.plugins</groupId>
   <artifactId>jobcopy-builder</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Jobcopy Builder plugin</name>
   <description>Jenkins plugin to copy a job in a build step.</description>
