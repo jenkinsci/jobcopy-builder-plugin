@@ -8,23 +8,17 @@
 
   <groupId>jp.ikedam.jenkins.plugins</groupId>
   <artifactId>jobcopy-builder</artifactId>
-  <version>0.9.0-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Jobcopy Builder plugin</name>
   <description>Jenkins plugin to copy a job in a build step.</description>
 
-  <url>http://dev.ikedam.jp/jenkins/jobcopy-builder/</url>
-  <!-- TODO: replace with the URL in wiki.jenkins-ci.org
-  <url>http://wiki.jenkins-ci.org/display/JENKINS/Jobcopy+Builder+Plugin</url>
-  -->
+  <url>http://wiki.jenkins-ci.org/display/JENKINS/Jobcopy+Builder+plugin</url>
   
-  <!--  TODO: activate here after the git repository is created.
   <scm>
     <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-    <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
+    <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>    <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
   </scm>
-  -->
   
   <developers>
     <developer>
