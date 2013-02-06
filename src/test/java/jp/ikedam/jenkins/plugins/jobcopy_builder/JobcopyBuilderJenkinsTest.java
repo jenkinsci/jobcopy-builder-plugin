@@ -25,6 +25,7 @@ package jp.ikedam.jenkins.plugins.jobcopy_builder;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -415,12 +416,28 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
     }
     
     /**
+     * Used for a error case test.
+     * 
+     * This class must be serializable, so anonymous class cannot be applied.
+     */
+    static private class NullJobcopyOperation extends JobcopyOperation implements Serializable
+    {
+        private static final long serialVersionUID = -4314651910414654207L;
+        @Override
+        public String perform(String xmlString, String encoding,
+                EnvVars env, PrintStream logger)
+        {
+            return null;
+        }
+    };
+    
+    /**
      * Test cases that builds fail
      * @throws IOException 
      * @throws ExecutionException 
      * @throws InterruptedException 
      */
-    public void terPerformError() throws IOException, InterruptedException, ExecutionException
+    public void testPerformError() throws IOException, InterruptedException, ExecutionException
     {
         FreeStyleProject project = createFreeStyleProject();
         String toJobName = "JobCopiedTo";
@@ -647,14 +664,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         // JobcopyOperation returned error.
         {
             List<JobcopyOperation> lst = new ArrayList<JobcopyOperation>();
-            lst.add(new JobcopyOperation(){
-                @Override
-                public String perform(String xmlString, String encoding,
-                        EnvVars env, PrintStream logger)
-                {
-                    return null;
-                }
-            });
+            lst.add(new NullJobcopyOperation());
             JobcopyBuilder target = new JobcopyBuilder(project.getName(), toJobName, true, lst);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
