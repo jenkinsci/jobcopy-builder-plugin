@@ -353,7 +353,9 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         {
             // create new job
             {
-                JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, new ArrayList<JobcopyOperation>());
+                List<JobcopyOperation> lst = new ArrayList<JobcopyOperation>();
+                lst.add(new EnableOperation());
+                JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, lst);
                 
                 FreeStyleProject project = createFreeStyleProject();
                 project.getBuildersList().add(target);
@@ -372,17 +374,26 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                 toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
                 assertNotNull("overwrite(create a new job)", toJob);
                 
-                assertTrue("overwrite(create a new job)", toJob.isDisabled());
+                assertFalse("overwrite(create a new job)", toJob.isDisabled());
                 
                 ParametersDefinitionProperty prop = toJob.getAction(ParametersDefinitionProperty.class);
                 assertTrue("overwrite(create a new job)", prop.getParameterDefinitionNames().contains("PARAM1"));
                 assertFalse("overwrite(create a new job)", prop.getParameterDefinitionNames().contains("PARAM2"));
+                
+                toJob.save();
+                // Execute it.
+                assertEquals("overwrite(create a new job)", 0, toJob.getBuilds().size());
+                b = toJob.scheduleBuild2(toJob.getQuietPeriod()).get();
+                while(b.isBuilding())
+                {
+                    Thread.sleep(100);
+                }
+                assertEquals("overwrite(create a new job)", 1, toJob.getBuilds().size());
             }
             
             // overwrite
             {
                 List<JobcopyOperation> lst = new ArrayList<JobcopyOperation>();
-                lst.add(new EnableOperation());
                 lst.add(new ReplaceOperation(
                         "PARAM1", false,
                         "PARAM2", false
@@ -406,11 +417,13 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                 toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
                 assertNotNull("overwrite(overwrite)", toJob);
                 
-                assertFalse("overwrite(overwrite)", toJob.isDisabled());
+                assertTrue("overwrite(overwrite)", toJob.isDisabled());
                 
                 ParametersDefinitionProperty prop = toJob.getAction(ParametersDefinitionProperty.class);
                 assertFalse("overwrite(overwrite)", prop.getParameterDefinitionNames().contains("PARAM1"));
                 assertTrue("overwrite(overwrite)", prop.getParameterDefinitionNames().contains("PARAM2"));
+                
+                assertEquals("overwrite(overwrite)", 1, toJob.getBuilds().size());
             }
         }
     }
