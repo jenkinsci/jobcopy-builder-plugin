@@ -55,8 +55,5 @@ public abstract String AbstractXmlJobcopyOperation::perform(Document doc, EnvVar
 TODO
 ----
 
-* テストを書く
-* コメントを英語化する
-* [jenkins-ci.orgでプラグインを公開する] (https://wiki.jenkins-ci.org/display/JENKINS/Hosting+Plugins)
 * 正規表現版の文字列の置き換えを作る
 

@@ -58,8 +58,5 @@ public abstract String AbstractXmlJobcopyOperation::perform(Document doc, EnvVar
 TODO
 ----
 
-* Write tests.
-* Write comments in English (that is, Englishize)
-* [Releasing a Plugin and Hosting a Plugin on jenkins-ci.org] (https://wiki.jenkins-ci.org/display/JENKINS/Hosting+Plugins)
 * Add new operation that replaces strings with regular expressions.
 
