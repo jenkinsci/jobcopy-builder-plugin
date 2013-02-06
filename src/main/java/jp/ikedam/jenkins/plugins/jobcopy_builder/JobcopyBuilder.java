@@ -34,6 +34,7 @@ import hudson.model.TopLevelItem;
 import hudson.model.BuildListener;
 import hudson.model.Job;
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractItem;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.util.ComboBoxModel;
@@ -50,6 +51,8 @@ import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Serializable;
+
+import javax.xml.transform.stream.StreamSource;
 
 /**
  * A build step to copy a job.
@@ -218,6 +221,11 @@ public class JobcopyBuilder extends Builder implements Serializable
             if(!isOverwrite()){
                 return false;
             }
+            if(!(toJob instanceof AbstractItem))
+            {
+                listener.getLogger().println("Only AbstractItem can be overwritten: please delete manually, and run copy again");
+                return false;
+            }
         }
         
         // Retrieve the config.xml of the job copied from.
@@ -242,21 +250,24 @@ public class JobcopyBuilder extends Builder implements Serializable
         listener.getLogger().println("Copied xml:");
         listener.getLogger().println(jobConfigXmlString);
         
-        // Remove the job copied to (only if it already exists)
-        if(toJob != null)
-        {
-            toJob.delete();
-            listener.getLogger().println(String.format("Deleted %s", toJobNameExpanded));
-        }
-        
-        // Create the job copied to.
-        listener.getLogger().println(String.format("Creating %s", toJobNameExpanded));
-        InputStream is = new ByteArrayInputStream(jobConfigXmlString.getBytes(encoding)); 
-        toJob = Jenkins.getInstance().createProjectFromXML(toJobNameExpanded, is);
         if(toJob == null)
         {
-            listener.getLogger().println(String.format("Failed to create %s", toJobNameExpanded));
-            return false;
+            // Create the job copied to.
+            listener.getLogger().println(String.format("Creating %s", toJobNameExpanded));
+            InputStream is = new ByteArrayInputStream(jobConfigXmlString.getBytes(encoding)); 
+            toJob = Jenkins.getInstance().createProjectFromXML(toJobNameExpanded, is);
+            if(toJob == null)
+            {
+                listener.getLogger().println(String.format("Failed to create %s", toJobNameExpanded));
+                return false;
+            }
+        }
+        else
+        {
+            listener.getLogger().println(String.format("Updating %s", toJobNameExpanded));
+            AbstractItem target = (AbstractItem)toJob;
+            InputStream is = new ByteArrayInputStream(jobConfigXmlString.getBytes(encoding)); 
+            target.updateByXml(new StreamSource(is));
         }
         
         // add the information of jobs copied from and to to the build.

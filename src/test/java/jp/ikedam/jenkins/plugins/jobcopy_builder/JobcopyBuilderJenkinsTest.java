@@ -670,7 +670,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         }
         
         // Failed to create a job
-        // I have no idea to archive this...
+        // I have no idea to achieve this...
     }
     
     public void testView() throws IOException, SAXException
