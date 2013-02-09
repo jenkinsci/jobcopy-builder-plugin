@@ -106,7 +106,7 @@ public class JobcopyBuilder extends Builder implements Serializable
      *     </tr>
      *     <tr>
      *         <td>true</td>
-     *         <td>Delete the existing job, and create a new job.</td>
+     *         <td>Overwrite the configuration of the existing job.</td>
      *     </tr>
      *     <tr>
      *         <td>false</td>
@@ -172,20 +172,20 @@ public class JobcopyBuilder extends Builder implements Serializable
     {
         EnvVars env = build.getEnvironment(listener);
         
-        if(StringUtils.isBlank(fromJobName))
+        if(StringUtils.isBlank(getFromJobName()))
         {
             listener.getLogger().println("From Job Name is not specified");
             return false;
         }
-        if(StringUtils.isBlank(toJobName))
+        if(StringUtils.isBlank(getToJobName()))
         {
             listener.getLogger().println("To Job Name is not specified");
             return false;
         }
         
         // Expand the variable expressions in job names.
-        String fromJobNameExpanded = env.expand(fromJobName);
-        String toJobNameExpanded = env.expand(toJobName);
+        String fromJobNameExpanded = env.expand(getFromJobName());
+        String toJobNameExpanded = env.expand(getToJobName());
         
         if(StringUtils.isBlank(fromJobNameExpanded))
         {
@@ -239,12 +239,15 @@ public class JobcopyBuilder extends Builder implements Serializable
         listener.getLogger().println(jobConfigXmlString);
         
         // Apply additional operations to the retrieved XML.
-        for(JobcopyOperation operation: getJobcopyOperationList())
+        if(getJobcopyOperationList() != null)
         {
-            jobConfigXmlString = operation.perform(jobConfigXmlString, encoding, env, listener.getLogger());
-            if(jobConfigXmlString == null)
+            for(JobcopyOperation operation: getJobcopyOperationList())
             {
-                return false;
+                jobConfigXmlString = operation.perform(jobConfigXmlString, encoding, env, listener.getLogger());
+                if(jobConfigXmlString == null)
+                {
+                    return false;
+                }
             }
         }
         listener.getLogger().println("Copied xml:");

@@ -65,7 +65,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         // Job will be added after new job created.
         ComboBoxModel beforeList = descriptor.doFillFromJobNameItems();
         
-        FreeStyleProject project = createFreeStyleProject();
+        FreeStyleProject project = createFreeStyleProject("testDescriptorDoFillFromJobNameItems1");
         String newJobname = project.getName();
         
         ComboBoxModel afterList = descriptor.doFillFromJobNameItems();
@@ -77,7 +77,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
     public void testDescriptorDoCheckFromJobName() throws IOException
     {
         JobcopyBuilder.DescriptorImpl descriptor = getDescriptor();
-        FreeStyleProject project = createFreeStyleProject();
+        FreeStyleProject project = createFreeStyleProject("testDescriptorDoCheckFromJobName1");
         String existJobname = project.getName();
         
         // exist job
@@ -157,7 +157,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
     public void testDescriptorDoCheckToJobName() throws IOException
     {
         JobcopyBuilder.DescriptorImpl descriptor = getDescriptor();
-        FreeStyleProject project = createFreeStyleProject();
+        FreeStyleProject project = createFreeStyleProject("testDescriptorDoCheckToJobName1");
         String existJobname = project.getName();
         
         // exist job, overwrite
@@ -250,7 +250,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
      */
     public void testPerform() throws IOException, InterruptedException, ExecutionException
     {
-        FreeStyleProject fromJob = createFreeStyleProject();
+        FreeStyleProject fromJob = createFreeStyleProject("testPerform1");
         
         String toJobName = "JobCopiedTo";
         FreeStyleProject toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
@@ -287,7 +287,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             ));
             JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, lst);
             
-            FreeStyleProject project = createFreeStyleProject();
+            FreeStyleProject project = createFreeStyleProject("testPerform2");
             project.getBuildersList().add(target);
             
             FreeStyleBuild b = project.scheduleBuild2(
@@ -323,7 +323,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             ));
             JobcopyBuilder target = new JobcopyBuilder("${fromJobName}", "${toJobName}", false, lst);
             
-            FreeStyleProject project = createFreeStyleProject();
+            FreeStyleProject project = createFreeStyleProject("testPerform3");
             project.getBuildersList().add(target);
             
             FreeStyleBuild b = project.scheduleBuild2(
@@ -357,7 +357,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                 lst.add(new EnableOperation());
                 JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, lst);
                 
-                FreeStyleProject project = createFreeStyleProject();
+                FreeStyleProject project = createFreeStyleProject("testPerform4");
                 project.getBuildersList().add(target);
                 
                 FreeStyleBuild b = project.scheduleBuild2(
@@ -400,7 +400,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                 ));
                 JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, true, lst);
                 
-                FreeStyleProject project = createFreeStyleProject();
+                FreeStyleProject project = createFreeStyleProject("testPerform5");
                 project.getBuildersList().add(target);
                 
                 FreeStyleBuild b = project.scheduleBuild2(
@@ -425,6 +425,56 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                 
                 assertEquals("overwrite(overwrite)", 1, toJob.getBuilds().size());
             }
+            
+            toJob.delete();
+        }
+        
+        // null for jobcopyOperationList
+        {
+            JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, null);
+            
+            FreeStyleProject project = createFreeStyleProject("testPerform6");
+            project.getBuildersList().add(target);
+            
+            FreeStyleBuild b = project.scheduleBuild2(
+                    project.getQuietPeriod(),
+                    new Cause.UserIdCause(),
+                    paramAction
+            ).get();
+            while(b.isBuilding())
+            {
+                Thread.sleep(100);
+            }
+            assertEquals("null for jobcopyOperationList", Result.SUCCESS, b.getResult());
+            
+            toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
+            assertNotNull("null for jobcopyOperationList", toJob);
+            
+            toJob.delete();
+        }
+        
+        // empty for jobcopyOperationList
+        {
+            JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, new ArrayList<JobcopyOperation>(0));
+            
+            FreeStyleProject project = createFreeStyleProject("testPerform7");
+            project.getBuildersList().add(target);
+            
+            FreeStyleBuild b = project.scheduleBuild2(
+                    project.getQuietPeriod(),
+                    new Cause.UserIdCause(),
+                    paramAction
+            ).get();
+            while(b.isBuilding())
+            {
+                Thread.sleep(100);
+            }
+            assertEquals("empty for jobcopyOperationList", Result.SUCCESS, b.getResult());
+            
+            toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
+            assertNotNull("empty for jobcopyOperationList", toJob);
+            
+            toJob.delete();
         }
     }
     
@@ -452,7 +502,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
      */
     public void testPerformError() throws IOException, InterruptedException, ExecutionException
     {
-        FreeStyleProject project = createFreeStyleProject();
+        FreeStyleProject project = createFreeStyleProject("testPerformError1");
         String toJobName = "JobCopiedTo";
         FreeStyleProject toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
         if(toJob != null)
@@ -658,7 +708,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // To job exists, and not overwrite.
         {
-            FreeStyleProject existJob = createFreeStyleProject();
+            FreeStyleProject existJob = createFreeStyleProject("testPerformError2");
             
             JobcopyBuilder target = new JobcopyBuilder(project.getName(), existJob.getName(), false, new ArrayList<JobcopyOperation>());
             project.getBuildersList().add(target);
@@ -706,7 +756,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         ));
         JobcopyBuilder target = new JobcopyBuilder("fromJob", "toJob", false, lst);
         
-        FreeStyleProject project = createFreeStyleProject();
+        FreeStyleProject project = createFreeStyleProject("testView1");
         project.getBuildersList().add(target);
         
         WebClient wc = new WebClient();
