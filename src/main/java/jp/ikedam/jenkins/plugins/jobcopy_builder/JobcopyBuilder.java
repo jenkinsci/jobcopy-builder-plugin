@@ -288,8 +288,20 @@ public class JobcopyBuilder extends Builder implements Serializable
             target.updateByXml(new StreamSource(is));
         }
         
+        boolean failed = false;
+        
+        if(getAdditionalFilesetList() != null && !getAdditionalFilesetList().isEmpty())
+        {
+            listener.getLogger().println("Copying Additional Files...");
+            for(AdditionalFileset fileset: getAdditionalFilesetList())
+            {
+                // TODO: copy and apply operations to the file.
+                // TODO: set failed if failed.
+            }
+        }
+        
         // add the information of jobs copied from and to to the build.
-        build.addAction(new CopiedjobinfoAction(fromJob, toJob));
+        build.addAction(new CopiedjobinfoAction(fromJob, toJob, failed));
         
         return true;
     }

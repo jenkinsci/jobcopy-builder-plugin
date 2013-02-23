@@ -57,7 +57,8 @@ public class CopiedjobinfoActionSimpleTest extends TestCase
         TopLevelItem toItem = new DummyJob(toItemName, toItemUrl);
         CopiedjobinfoAction target = new CopiedjobinfoAction(
                 fromItem,
-                toItem
+                toItem,
+                false
         );
         
         assertEquals(fromItemName, target.getFromJobName());

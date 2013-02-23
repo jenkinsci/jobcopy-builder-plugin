@@ -58,7 +58,7 @@ public class CopiedjobinfoActionJenkinsTest extends HudsonTestCase
         
         // Create job, and create a build.
         FreeStyleProject job = createFreeStyleProject();
-        CopiedjobinfoAction action = new CopiedjobinfoAction(fromJob, toJob);
+        CopiedjobinfoAction action = new CopiedjobinfoAction(fromJob, toJob, false);
         FreeStyleBuild build = job.scheduleBuild2(job.getQuietPeriod(), new Cause.UserIdCause(), action).get();
         
         // Wait for build is completed.

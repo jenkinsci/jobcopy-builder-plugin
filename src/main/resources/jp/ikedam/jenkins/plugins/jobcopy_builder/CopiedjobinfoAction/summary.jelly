@@ -34,5 +34,11 @@ THE SOFTWARE.
                 <a href="${baseURL}/${it.toUrl}">${it.toJobName}</a>
             </f:entry>
         </l:pane>
+        <j:if test="${it.failed}">
+            <div class="warning">
+                The job is copied, but an error occurred in the process.
+                Check the build log and the configuration of the copied job, for something wrong may be in them.
+            </div>
+        </j:if>
     </t:summary>
 </j:jelly>

@@ -51,7 +51,7 @@ public class CopiedjobinfoAction implements Action, Serializable
         return this.fromJobName;
     }
     
-    public String fromUrl;
+    private String fromUrl;
     
     /**
      * Returns the URI (path) of the job copied from.
@@ -66,7 +66,7 @@ public class CopiedjobinfoAction implements Action, Serializable
         return this.fromUrl;
     }
     
-    public String toJobName;
+    private String toJobName;
     
     /**
      * Returns the name of the job copied to.
@@ -78,7 +78,7 @@ public class CopiedjobinfoAction implements Action, Serializable
         return this.toJobName;
     }
     
-    public String toUrl;
+    private String toUrl;
     
     /**
      * Returns the URI (path) of the job copied to.
@@ -93,19 +93,33 @@ public class CopiedjobinfoAction implements Action, Serializable
         return this.toUrl;
     }
     
+    private boolean failed;
+    
+    /**
+     * Returns whether the job is copied incompletely
+     * 
+     * @return whether the job is copied incompletely
+     */
+    public boolean isFailed()
+    {
+        return failed;
+    }
+    
     /**
      * 
      * constructor.
      * 
      * @param fromItem  job that was copied from.
      * @param toItem    job that was copied to.
+     * @param failed    whether the job is copied incompletely.
      */
-    public CopiedjobinfoAction(TopLevelItem fromItem, TopLevelItem toItem)
+    public CopiedjobinfoAction(TopLevelItem fromItem, TopLevelItem toItem, boolean failed)
     {
         this.fromJobName = fromItem.getName();
         this.fromUrl = fromItem.getUrl();
         this.toJobName = toItem.getName();
         this.toUrl = toItem.getUrl();
+        this.failed = failed;
     }
     
     /**
