@@ -295,9 +295,15 @@ public class JobcopyBuilder extends Builder implements Serializable
             listener.getLogger().println("Copying Additional Files...");
             for(AdditionalFileset fileset: getAdditionalFilesetList())
             {
-                // TODO: copy and apply operations to the file.
-                // TODO: set failed if failed.
+                if(!fileset.perform(toJob, fromJob, env, listener.getLogger()))
+                {
+                    failed = true;
+                }
             }
+            
+            // Do null update to reload the configuration.
+            AbstractItem target = (AbstractItem)toJob;
+            target.updateByXml(new StreamSource(target.getConfigFile().readRaw()));
         }
         
         // add the information of jobs copied from and to to the build.

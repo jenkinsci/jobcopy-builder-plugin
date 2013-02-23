@@ -23,15 +23,23 @@
  */
 package jp.ikedam.jenkins.plugins.jobcopy_builder;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tools.ant.DirectoryScanner;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import hudson.DescriptorExtensionList;
+import hudson.EnvVars;
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
+import hudson.model.TopLevelItem;
 import hudson.model.Descriptor;
 
 /**
@@ -127,6 +135,98 @@ public class AdditionalFileset extends AbstractDescribableImpl<AdditionalFileset
         this.jobcopyOperationList = jobcopyOperationList;
     }
     
+    /**
+     * Copy the additional files and apply additional operations.
+     * 
+     * @param toJob
+     * @param fromJob
+     * @param logger
+     * @return whether the work succeeded.
+     */
+    public boolean perform(TopLevelItem toJob, TopLevelItem fromJob, EnvVars env, PrintStream logger)
+    {
+        DirectoryScanner ds = Util.createFileSet(
+                fromJob.getRootDir(),
+                getIncludeFile(),
+                getExcludeFile()
+            ).getDirectoryScanner();
+        
+        boolean ret = true;
+        
+        for(String filename: ds.getIncludedFiles())
+        {
+            logger.println(String.format("Copy %s", filename));
+            File srcFile = new File(fromJob.getRootDir(), filename);
+            File dstFile = new File(toJob.getRootDir(), filename);
+            if(!perform(dstFile, srcFile, env, logger))
+            {
+                ret = false;
+            }
+        }
+        
+        return ret;
+    }
+    
+    /**
+     * Process one file.
+     * 
+     * @param dstFile
+     * @param srcFile
+     * @param logger
+     * @return
+     */
+    private boolean perform(File dstFile, File srcFile, EnvVars env, PrintStream logger)
+    {
+        if(dstFile.exists() && !isOverwrite())
+        {
+            logger.println(String.format("%s is already exists...skip.", dstFile.getPath()));
+            return true;
+        }
+        
+        // Read file into string.
+        String fileContents;
+        String encoding = "UTF-8";
+        try
+        {
+            fileContents = FileUtils.readFileToString(srcFile, encoding);
+        }
+        catch (IOException e)
+        {
+            logger.println(String.format("Failed to read from %s", srcFile.getPath()));
+            e.printStackTrace(logger);
+            return false;
+        }
+        
+        logger.println("Original contents:");
+        logger.println(fileContents);
+        
+        // Apply additional operations to the retrieved Contents.
+        for(JobcopyOperation operation: getJobcopyOperationList())
+        {
+            fileContents = operation.perform(fileContents, encoding, env, logger);
+            if(fileContents == null)
+            {
+                return false;
+            }
+        }
+        logger.println("Copied contents:");
+        logger.println(fileContents);
+        
+        try
+        {
+            // The directories seem to be automatically created. 
+            FileUtils.writeStringToFile(dstFile, fileContents, encoding);
+        }
+        catch (IOException e)
+        {
+            logger.println(String.format("Failed to write to %s", dstFile.getPath()));
+            e.printStackTrace(logger);
+            return false;
+        }
+        
+        return true;
+    }
+
     /**
      * The internal class to work with views.
      * 
