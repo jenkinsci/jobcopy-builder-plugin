@@ -133,6 +133,18 @@ public class JobcopyBuilder extends Builder implements Serializable
         return jobcopyOperationList;
     }
     
+    private List<AdditionalFileset> additionalFilesetList;
+    
+    /**
+     * Retuns a list of sets of files to copy additional to JOBNAME/config.xml.
+     * 
+     * @return the additionalFilesetList
+     */
+    public List<AdditionalFileset> getAdditionalFilesetList()
+    {
+        return additionalFilesetList;
+    }
+
     /**
      * Constructor to instantiate from parameters in the job configuration page.
      * 
@@ -145,14 +157,17 @@ public class JobcopyBuilder extends Builder implements Serializable
      * @param overwrite     whether to overwrite if the job to be copied to is already existing.
      * @param jobcopyOperationList
      *                      the list of operations to be performed when copying.
+     * @param additionalFilesetList
+     *                      the list of sets of files to copy additional to JOBNAME/config.xml.
      */
     @DataBoundConstructor
-    public JobcopyBuilder(String fromJobName, String toJobName, boolean overwrite, List<JobcopyOperation> jobcopyOperationList)
+    public JobcopyBuilder(String fromJobName, String toJobName, boolean overwrite, List<JobcopyOperation> jobcopyOperationList, List<AdditionalFileset> additionalFilesetList)
     {
         this.fromJobName = StringUtils.trim(fromJobName);
         this.toJobName = StringUtils.trim(toJobName);
         this.overwrite = overwrite;
         this.jobcopyOperationList = jobcopyOperationList;
+        this.additionalFilesetList = additionalFilesetList;
     }
     
     /**

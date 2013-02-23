@@ -55,7 +55,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
 {
     private JobcopyBuilder.DescriptorImpl getDescriptor()
     {
-        return (JobcopyBuilder.DescriptorImpl)(new JobcopyBuilder(null, null, false, null)).getDescriptor();
+        return (JobcopyBuilder.DescriptorImpl)(new JobcopyBuilder(null, null, false, null, null)).getDescriptor();
     }
     
     public void testDescriptorDoFillFromJobNameItems() throws IOException
@@ -285,7 +285,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                     "PARAM1", false,
                     "PARAM2", false
             ));
-            JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, lst);
+            JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, lst, null);
             
             FreeStyleProject project = createFreeStyleProject("testPerform2");
             project.getBuildersList().add(target);
@@ -321,7 +321,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                     "PARAM1", false,
                     "PARAM2", false
             ));
-            JobcopyBuilder target = new JobcopyBuilder("${fromJobName}", "${toJobName}", false, lst);
+            JobcopyBuilder target = new JobcopyBuilder("${fromJobName}", "${toJobName}", false, lst, null);
             
             FreeStyleProject project = createFreeStyleProject("testPerform3");
             project.getBuildersList().add(target);
@@ -355,7 +355,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             {
                 List<JobcopyOperation> lst = new ArrayList<JobcopyOperation>();
                 lst.add(new EnableOperation());
-                JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, lst);
+                JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, lst, null);
                 
                 FreeStyleProject project = createFreeStyleProject("testPerform4");
                 project.getBuildersList().add(target);
@@ -398,7 +398,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                         "PARAM1", false,
                         "PARAM2", false
                 ));
-                JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, true, lst);
+                JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, true, lst, null);
                 
                 FreeStyleProject project = createFreeStyleProject("testPerform5");
                 project.getBuildersList().add(target);
@@ -431,7 +431,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // null for jobcopyOperationList
         {
-            JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, null);
+            JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, null, null);
             
             FreeStyleProject project = createFreeStyleProject("testPerform6");
             project.getBuildersList().add(target);
@@ -455,7 +455,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // empty for jobcopyOperationList
         {
-            JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, new ArrayList<JobcopyOperation>(0));
+            JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, new ArrayList<JobcopyOperation>(0), null);
             
             FreeStyleProject project = createFreeStyleProject("testPerform7");
             project.getBuildersList().add(target);
@@ -516,7 +516,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // From Job Name is null.
         {
-            JobcopyBuilder target = new JobcopyBuilder(null, toJobName, true, new ArrayList<JobcopyOperation>());
+            JobcopyBuilder target = new JobcopyBuilder(null, toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -532,7 +532,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // From Job Name is empty.
         {
-            JobcopyBuilder target = new JobcopyBuilder("", toJobName, true, new ArrayList<JobcopyOperation>());
+            JobcopyBuilder target = new JobcopyBuilder("", toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -548,7 +548,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // From Job Name is blank.
         {
-            JobcopyBuilder target = new JobcopyBuilder("  ", toJobName, true, new ArrayList<JobcopyOperation>());
+            JobcopyBuilder target = new JobcopyBuilder("  ", toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -564,7 +564,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // From Job Name gets empty.
         {
-            JobcopyBuilder target = new JobcopyBuilder("${EMPTY}", toJobName, true, new ArrayList<JobcopyOperation>());
+            JobcopyBuilder target = new JobcopyBuilder("${EMPTY}", toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -580,7 +580,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // From Job Name gets blank.
         {
-            JobcopyBuilder target = new JobcopyBuilder("  ${EMPTY}  ", toJobName, true, new ArrayList<JobcopyOperation>());
+            JobcopyBuilder target = new JobcopyBuilder("  ${EMPTY}  ", toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -596,7 +596,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // To Job Name is null.
         {
-            JobcopyBuilder target = new JobcopyBuilder(project.getName(), null, true, new ArrayList<JobcopyOperation>());
+            JobcopyBuilder target = new JobcopyBuilder(project.getName(), null, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -612,7 +612,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // To Job Name is empty.
         {
-            JobcopyBuilder target = new JobcopyBuilder(project.getName(), "", true, new ArrayList<JobcopyOperation>());
+            JobcopyBuilder target = new JobcopyBuilder(project.getName(), "", true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -628,7 +628,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // To Job Name is blank.
         {
-            JobcopyBuilder target = new JobcopyBuilder(project.getName(), "  ", true, new ArrayList<JobcopyOperation>());
+            JobcopyBuilder target = new JobcopyBuilder(project.getName(), "  ", true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -644,7 +644,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // To Job Name gets empty.
         {
-            JobcopyBuilder target = new JobcopyBuilder(project.getName(), "${EMPTY}", true, new ArrayList<JobcopyOperation>());
+            JobcopyBuilder target = new JobcopyBuilder(project.getName(), "${EMPTY}", true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -660,7 +660,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // To Job Name gets blank.
         {
-            JobcopyBuilder target = new JobcopyBuilder(project.getName(), "  ${EMPTY}  ", true, new ArrayList<JobcopyOperation>());
+            JobcopyBuilder target = new JobcopyBuilder(project.getName(), "  ${EMPTY}  ", true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -676,7 +676,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // From job does not exist.
         {
-            JobcopyBuilder target = new JobcopyBuilder("nosuchjob", toJobName, true, new ArrayList<JobcopyOperation>());
+            JobcopyBuilder target = new JobcopyBuilder("nosuchjob", toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -692,7 +692,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // From job(expanded) does not exist.
         {
-            JobcopyBuilder target = new JobcopyBuilder("${NOSUCHJOB}", toJobName, true, new ArrayList<JobcopyOperation>());
+            JobcopyBuilder target = new JobcopyBuilder("${NOSUCHJOB}", toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -710,7 +710,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         {
             FreeStyleProject existJob = createFreeStyleProject("testPerformError2");
             
-            JobcopyBuilder target = new JobcopyBuilder(project.getName(), existJob.getName(), false, new ArrayList<JobcopyOperation>());
+            JobcopyBuilder target = new JobcopyBuilder(project.getName(), existJob.getName(), false, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -728,7 +728,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         {
             List<JobcopyOperation> lst = new ArrayList<JobcopyOperation>();
             lst.add(new NullJobcopyOperation());
-            JobcopyBuilder target = new JobcopyBuilder(project.getName(), toJobName, true, lst);
+            JobcopyBuilder target = new JobcopyBuilder(project.getName(), toJobName, true, lst, null);
             project.getBuildersList().add(target);
             FreeStyleBuild b = project.scheduleBuild2(
                     project.getQuietPeriod(),
@@ -754,7 +754,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                 "PARAM1", false,
                 "PARAM2", false
         ));
-        JobcopyBuilder target = new JobcopyBuilder("fromJob", "toJob", false, lst);
+        JobcopyBuilder target = new JobcopyBuilder("fromJob", "toJob", false, lst, null);
         
         FreeStyleProject project = createFreeStyleProject("testView1");
         project.getBuildersList().add(target);

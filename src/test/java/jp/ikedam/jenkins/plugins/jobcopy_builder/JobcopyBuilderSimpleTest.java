@@ -48,7 +48,8 @@ public class JobcopyBuilderSimpleTest extends TestCase
                     fromJobName,
                     toJobName,
                     true,
-                    lst
+                    lst,
+                    null
                     );
             
             assertEquals(fromJobName, target.getFromJobName());
@@ -63,7 +64,8 @@ public class JobcopyBuilderSimpleTest extends TestCase
                     "  " + fromJobName + " ",
                     " " + toJobName + "   ",
                     false,
-                    emptyList);
+                    emptyList,
+                    null);
             
             assertEquals(fromJobName, target.getFromJobName());
             assertEquals(toJobName, target.getToJobName());
@@ -77,6 +79,7 @@ public class JobcopyBuilderSimpleTest extends TestCase
                     null,
                     null,
                     true,
+                    null,
                     null
                     );
             
