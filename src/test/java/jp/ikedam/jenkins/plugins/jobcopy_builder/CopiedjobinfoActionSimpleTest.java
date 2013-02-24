@@ -55,16 +55,29 @@ public class CopiedjobinfoActionSimpleTest extends TestCase
         
         TopLevelItem fromItem = new DummyJob(fromItemName, fromItemUrl);
         TopLevelItem toItem = new DummyJob(toItemName, toItemUrl);
-        CopiedjobinfoAction target = new CopiedjobinfoAction(
-                fromItem,
-                toItem,
-                false
-        );
+        {
+            CopiedjobinfoAction target = new CopiedjobinfoAction(
+                    fromItem,
+                    toItem,
+                    false
+            );
+            
+            assertEquals(fromItemName, target.getFromJobName());
+            assertEquals(fromItemUrl,  target.getFromUrl());
+            assertEquals(toItemName,   target.getToJobName());
+            assertEquals(toItemUrl,    target.getToUrl());
+            assertEquals(false,        target.isFailed());
+        }
         
-        assertEquals(fromItemName, target.getFromJobName());
-        assertEquals(fromItemUrl,  target.getFromUrl());
-        assertEquals(toItemName,   target.getToJobName());
-        assertEquals(toItemUrl,    target.getToUrl());
+        // failed
+        {
+            CopiedjobinfoAction target = new CopiedjobinfoAction(
+                    fromItem,
+                    toItem,
+                    true
+            );
+            assertEquals(true,         target.isFailed());
+        }
     }
     
     private static class DummyJob implements TopLevelItem

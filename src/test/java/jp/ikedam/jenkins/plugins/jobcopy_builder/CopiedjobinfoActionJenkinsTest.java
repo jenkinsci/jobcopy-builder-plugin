@@ -67,8 +67,21 @@ public class CopiedjobinfoActionJenkinsTest extends HudsonTestCase
             Thread.sleep(100);
         }
         
+        
+        // Create a failed build.
+        CopiedjobinfoAction failedAction = new CopiedjobinfoAction(fromJob, toJob, true);
+        FreeStyleBuild failedBuild = job.scheduleBuild2(job.getQuietPeriod(), new Cause.UserIdCause(), failedAction).get();
+        
+        // Wait for build is completed.
+        while(failedBuild.isBuilding())
+        {
+            Thread.sleep(100);
+        }
+        
         // Access to page.
         WebClient wc = new WebClient();
+        
+        // access to succeeded build.
         {
             HtmlPage page = wc.getPage(build);
             
@@ -81,6 +94,25 @@ public class CopiedjobinfoActionJenkinsTest extends HudsonTestCase
             // contains link to to job.
             {
                 List<Object> nodes = page.getByXPath(String.format("//a[%s]", getEndsWithXpath("@href", toJobUrl)));
+                assertNotNull(nodes);
+                assertTrue(nodes.size() > 0);
+            }
+            
+            // does not contains warning message
+            {
+                List<Object> nodes = page.getByXPath("//*[@class='warning']");
+                assertNotNull(nodes);
+                assertEquals(0, nodes.size());
+            }
+        }
+        
+        // access to failed build.
+        {
+            HtmlPage page = wc.getPage(failedBuild);
+            
+            // contains warning message
+            {
+                List<Object> nodes = page.getByXPath("//*[@class='warning']");
                 assertNotNull(nodes);
                 assertTrue(nodes.size() > 0);
             }
