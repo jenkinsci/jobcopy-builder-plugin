@@ -27,12 +27,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tools.ant.DirectoryScanner;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 import hudson.DescriptorExtensionList;
 import hudson.EnvVars;
@@ -41,6 +44,7 @@ import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.TopLevelItem;
 import hudson.model.Descriptor;
+import hudson.util.FormValidation;
 
 /**
  * A set of files to copy additional to JOBNAME/config.xml. 
@@ -145,26 +149,42 @@ public class AdditionalFileset extends AbstractDescribableImpl<AdditionalFileset
      */
     public boolean perform(TopLevelItem toJob, TopLevelItem fromJob, EnvVars env, PrintStream logger)
     {
-        DirectoryScanner ds = Util.createFileSet(
-                fromJob.getRootDir(),
-                getIncludeFile(),
-                getExcludeFile()
-            ).getDirectoryScanner();
+        if(StringUtils.isBlank(getIncludeFile()))
+        {
+            logger.println("includeFile is not configured");
+            return false;
+        }
         
         boolean ret = true;
         
-        for(String filename: ds.getIncludedFiles())
+        for(String filename: getFilesToCopy(fromJob.getRootDir()))
         {
             logger.println(String.format("Copy %s", filename));
             File srcFile = new File(fromJob.getRootDir(), filename);
             File dstFile = new File(toJob.getRootDir(), filename);
-            if(!perform(dstFile, srcFile, env, logger))
+            if(!performToFile(dstFile, srcFile, env, logger))
             {
                 ret = false;
             }
         }
         
         return ret;
+    }
+    
+    protected List<String> getFilesToCopy(File dir)
+    {
+        if(StringUtils.isBlank(getIncludeFile()))
+        {
+            return new ArrayList<String>(0);
+        }
+        
+        DirectoryScanner ds = Util.createFileSet(
+                dir,
+                getIncludeFile(),
+                getExcludeFile()
+            ).getDirectoryScanner();
+        
+        return Arrays.asList(ds.getIncludedFiles());
     }
     
     /**
@@ -175,7 +195,7 @@ public class AdditionalFileset extends AbstractDescribableImpl<AdditionalFileset
      * @param logger
      * @return
      */
-    private boolean perform(File dstFile, File srcFile, EnvVars env, PrintStream logger)
+    private boolean performToFile(File dstFile, File srcFile, EnvVars env, PrintStream logger)
     {
         if(dstFile.exists() && !isOverwrite())
         {
@@ -265,5 +285,22 @@ public class AdditionalFileset extends AbstractDescribableImpl<AdditionalFileset
             return JobcopyOperation.all();
         }
         
+        
+        /**
+         * Validates the input to includeFile
+         * 
+         * @param includeFile
+         * 
+         * @return FormValidation object
+         */
+        public FormValidation doCheckIncludeFile(@QueryParameter String includeFile)
+        {
+            if(StringUtils.isBlank(includeFile))
+            {
+                return FormValidation.error(Messages.AdditionalFileSet_includeFile_empty());
+            }
+            
+            return FormValidation.ok();
+        }
     }
 }
