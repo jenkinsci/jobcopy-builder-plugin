@@ -35,12 +35,17 @@ import jenkins.model.Jenkins;
 import hudson.EnvVars;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Cause;
+import hudson.model.Descriptor.FormException;
 import hudson.model.FreeStyleProject;
 import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.StringParameterDefinition;
 import hudson.model.StringParameterValue;
 import hudson.model.Result;
+import hudson.plugins.promoted_builds.JobPropertyImpl;
+import hudson.plugins.promoted_builds.PromotionProcess;
+import hudson.plugins.promoted_builds.conditions.DownstreamPassCondition;
+import hudson.plugins.promoted_builds.conditions.ManualCondition;
 import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
 
@@ -744,6 +749,314 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // Failed to create a job
         // I have no idea to achieve this...
+    }
+    
+    // Test the behavior with AdditionalFileset
+    public void testPerformWithAdditionalFileset() throws IOException, InterruptedException, FormException, ExecutionException
+    {
+        FreeStyleProject fromJob = createFreeStyleProject("testPerformWithAdditionalFileset1");
+        
+        String toJobName = "JobCopiedTo";
+        FreeStyleProject toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
+        if(toJob != null)
+        {
+            toJob.delete();
+        }
+        
+        // Set up the job copied from.
+        // Define Promoted Builds.
+        {
+            JobPropertyImpl promotion = new JobPropertyImpl(fromJob);
+            
+            PromotionProcess process1 = promotion.addProcess("Downstream");
+            process1.icon = "Gold Star";
+            process1.conditions.add(new DownstreamPassCondition("Downstream-Test-1"));
+            
+            PromotionProcess process2 = promotion.addProcess("Manual");
+            process2.icon = "Green Star";
+            process2.conditions.add(new ManualCondition());
+        }
+        
+        fromJob.save();
+        
+        ParametersAction paramAction = new ParametersAction(
+                new StringParameterValue("fromJobName", fromJob.getName()),
+                new StringParameterValue("toJobName", toJobName)
+        );
+        
+        // Copy all files
+        {
+            List<JobcopyOperation> opList = new ArrayList<JobcopyOperation>();
+            opList.add(new ReplaceOperation(
+                    "Test-1", false,
+                    "Test-2", false
+            ));
+            
+            List<AdditionalFileset> filesetList = new ArrayList<AdditionalFileset>();
+            filesetList.add(new AdditionalFileset(
+                    "promotions/*/config.xml",
+                    null,
+                    false,
+                    opList
+            ));
+            
+            JobcopyBuilder target = new JobcopyBuilder(
+                    fromJob.getName(),
+                    toJobName,
+                    false,
+                    null,
+                    filesetList
+            );
+            
+            FreeStyleProject project = createFreeStyleProject("testPerformWithAdditionalFileset2");
+            project.getBuildersList().add(target);
+            
+            FreeStyleBuild b = project.scheduleBuild2(
+                    project.getQuietPeriod(),
+                    new Cause.UserIdCause(),
+                    paramAction
+            ).get();
+            while(b.isBuilding())
+            {
+                Thread.sleep(100);
+            }
+            assertEquals("Copy all files", Result.SUCCESS, b.getResult());
+            
+            toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
+            assertNotNull("Copy all files", toJob);
+            
+            JobPropertyImpl promotion = toJob.getProperty(JobPropertyImpl.class);
+            assertNotNull("Copy all files", promotion);
+            
+            assertEquals("Copy all files", 2, promotion.getItems().size());
+            
+            // Downstream
+            // Gold Star
+            // Downstream-Test-1
+            PromotionProcess process1 = promotion.getItem("Downstream");
+            assertNotNull("Copy all files", process1);
+            assertEquals("Copy all files", "Gold Star", process1.getIcon());
+            assertEquals("Copy all files", 1, process1.conditions.size());
+            assertTrue("Copy all files", process1.conditions.get(0) instanceof DownstreamPassCondition);
+            assertEquals("Copy all files", "Downstream-Test-2", ((DownstreamPassCondition)process1.conditions.get(0)).getJobs());
+            
+            // Manual
+            // Green Star
+            PromotionProcess process2 = promotion.getItem("Manual");
+            assertNotNull("Copy all files", process2);
+            assertEquals("Copy all files", "Green Star", process2.getIcon());
+            assertEquals("Copy all files", 1, process2.conditions.size());
+            assertTrue("Copy all files", process1.conditions.get(0) instanceof ManualCondition);
+            
+            toJob.delete();
+        }
+        
+        // Copy part of files
+        {
+            List<AdditionalFileset> filesetList = new ArrayList<AdditionalFileset>();
+            filesetList.add(new AdditionalFileset(
+                    "promotions/*/config.xml",
+                    "promotions/Manual/*",
+                    false,
+                    null
+            ));
+            
+            JobcopyBuilder target = new JobcopyBuilder(
+                    fromJob.getName(),
+                    toJobName,
+                    false,
+                    null,
+                    filesetList
+            );
+            
+            FreeStyleProject project = createFreeStyleProject("testPerformWithAdditionalFileset3");
+            project.getBuildersList().add(target);
+            
+            FreeStyleBuild b = project.scheduleBuild2(
+                    project.getQuietPeriod(),
+                    new Cause.UserIdCause(),
+                    paramAction
+            ).get();
+            while(b.isBuilding())
+            {
+                Thread.sleep(100);
+            }
+            assertEquals("Copy part of files", Result.SUCCESS, b.getResult());
+            
+            toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
+            assertNotNull("Copy part of files", toJob);
+            
+            JobPropertyImpl promotion = toJob.getProperty(JobPropertyImpl.class);
+            assertNotNull("Copy part of files", promotion);
+            
+            assertEquals("Copy part of files", 1, promotion.getItems().size());
+            assertNotNull("Copy part of files", promotion.getItem("Downstream"));
+            assertNull("Copy part of files", promotion.getItem("Manual"));
+            
+            toJob.delete();
+        }
+        
+        // Overwrite
+        {
+            // Copy a job
+            {
+                List<JobcopyOperation> opList = new ArrayList<JobcopyOperation>();
+                
+                List<AdditionalFileset> filesetList = new ArrayList<AdditionalFileset>();
+                filesetList.add(new AdditionalFileset(
+                        "promotions/*/config.xml",
+                        null,
+                        false,
+                        opList
+                ));
+                
+                JobcopyBuilder target = new JobcopyBuilder(
+                        fromJob.getName(),
+                        toJobName,
+                        false,
+                        null,
+                        filesetList
+                );
+                
+                FreeStyleProject project = createFreeStyleProject("testPerformWithAdditionalFileset4");
+                project.getBuildersList().add(target);
+                
+                FreeStyleBuild b = project.scheduleBuild2(
+                        project.getQuietPeriod(),
+                        new Cause.UserIdCause(),
+                        paramAction
+                ).get();
+                while(b.isBuilding())
+                {
+                    Thread.sleep(100);
+                }
+                assertEquals("Overwrite: Create a job", Result.SUCCESS, b.getResult());
+                
+                toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
+                assertNotNull("Overwrite: Create a job", toJob);
+                
+                JobPropertyImpl promotion = toJob.getProperty(JobPropertyImpl.class);
+                assertNotNull("Overwrite: Create a job", promotion);
+                
+                // Downstream
+                // Gold Star
+                // Downstream-Test-1
+                PromotionProcess process1 = promotion.getItem("Downstream");
+                assertNotNull("Overwrite: Create a job", process1);
+                assertTrue("Overwrite: Create a job", process1.conditions.get(0) instanceof DownstreamPassCondition);
+                assertEquals("Overwrite: Create a job", "Downstream-Test-2", ((DownstreamPassCondition)process1.conditions.get(0)).getJobs());
+            }
+            
+            // not overwrite
+            {
+                List<JobcopyOperation> opList = new ArrayList<JobcopyOperation>();
+                opList.add(new ReplaceOperation(
+                        "Test-1", false,
+                        "Test-2", false
+                ));
+                
+                List<AdditionalFileset> filesetList = new ArrayList<AdditionalFileset>();
+                filesetList.add(new AdditionalFileset(
+                        "promotions/*/config.xml",
+                        null,
+                        true,
+                        opList
+                ));
+                
+                JobcopyBuilder target = new JobcopyBuilder(
+                        fromJob.getName(),
+                        toJobName,
+                        true,
+                        null,
+                        filesetList
+                );
+                
+                FreeStyleProject project = createFreeStyleProject("testPerformWithAdditionalFileset5");
+                project.getBuildersList().add(target);
+                
+                FreeStyleBuild b = project.scheduleBuild2(
+                        project.getQuietPeriod(),
+                        new Cause.UserIdCause(),
+                        paramAction
+                ).get();
+                while(b.isBuilding())
+                {
+                    Thread.sleep(100);
+                }
+                assertEquals("Overwrite: not overwrite", Result.SUCCESS, b.getResult());
+                
+                toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
+                assertNotNull("Overwrite: not overwrite", toJob);
+                
+                JobPropertyImpl promotion = toJob.getProperty(JobPropertyImpl.class);
+                assertNotNull("Overwrite: not overwrite", promotion);
+                
+                // Downstream
+                // Gold Star
+                // Downstream-Test-1
+                PromotionProcess process1 = promotion.getItem("Downstream");
+                assertNotNull("Overwrite: not overwrite", process1);
+                assertTrue("Overwrite: not overwrite", process1.conditions.get(0) instanceof DownstreamPassCondition);
+                // Not changed!
+                assertEquals("Overwrite: not overwrite", "Downstream-Test-1", ((DownstreamPassCondition)process1.conditions.get(0)).getJobs());
+            }
+            
+            // overwrite
+            {
+                List<JobcopyOperation> opList = new ArrayList<JobcopyOperation>();
+                opList.add(new ReplaceOperation(
+                        "Test-1", false,
+                        "Test-3", false
+                ));
+                
+                List<AdditionalFileset> filesetList = new ArrayList<AdditionalFileset>();
+                filesetList.add(new AdditionalFileset(
+                        "promotions/*/config.xml",
+                        null,
+                        true,
+                        opList
+                ));
+                
+                JobcopyBuilder target = new JobcopyBuilder(
+                        fromJob.getName(),
+                        toJobName,
+                        true,
+                        null,
+                        filesetList
+                );
+                
+                FreeStyleProject project = createFreeStyleProject("testPerformWithAdditionalFileset5");
+                project.getBuildersList().add(target);
+                
+                FreeStyleBuild b = project.scheduleBuild2(
+                        project.getQuietPeriod(),
+                        new Cause.UserIdCause(),
+                        paramAction
+                ).get();
+                while(b.isBuilding())
+                {
+                    Thread.sleep(100);
+                }
+                assertEquals("Overwrite: overwrite", Result.SUCCESS, b.getResult());
+                
+                toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
+                assertNotNull("Overwrite: overwrite", toJob);
+                
+                JobPropertyImpl promotion = toJob.getProperty(JobPropertyImpl.class);
+                assertNotNull("Overwrite: overwrite", promotion);
+                
+                // Downstream
+                // Gold Star
+                // Downstream-Test-1
+                PromotionProcess process1 = promotion.getItem("Downstream");
+                assertNotNull("Overwrite: not overwrite", process1);
+                assertTrue("Overwrite: not overwrite", process1.conditions.get(0) instanceof DownstreamPassCondition);
+                // changed!
+                assertEquals("Overwrite: not overwrite", "Downstream-Test-3", ((DownstreamPassCondition)process1.conditions.get(0)).getJobs());
+            }
+            
+            toJob.delete();
+        }
     }
     
     public void testView() throws IOException, SAXException
