@@ -195,7 +195,7 @@ public class AdditionalFileset extends AbstractDescribableImpl<AdditionalFileset
      * @param logger
      * @return
      */
-    private boolean performToFile(File dstFile, File srcFile, EnvVars env, PrintStream logger)
+    protected boolean performToFile(File dstFile, File srcFile, EnvVars env, PrintStream logger)
     {
         if(dstFile.exists() && !isOverwrite())
         {

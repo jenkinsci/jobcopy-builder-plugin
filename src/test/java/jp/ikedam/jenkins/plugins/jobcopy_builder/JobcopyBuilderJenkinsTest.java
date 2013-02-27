@@ -50,7 +50,6 @@ import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
 
 import org.jvnet.hudson.test.HudsonTestCase;
-import org.jvnet.hudson.test.recipes.WithPlugin;
 import org.xml.sax.SAXException;
 
 /**
