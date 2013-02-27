@@ -221,12 +221,15 @@ public class AdditionalFileset extends AbstractDescribableImpl<AdditionalFileset
         logger.println(fileContents);
         
         // Apply additional operations to the retrieved Contents.
-        for(JobcopyOperation operation: getJobcopyOperationList())
+        if(getJobcopyOperationList() != null)
         {
-            fileContents = operation.perform(fileContents, encoding, env, logger);
-            if(fileContents == null)
+            for(JobcopyOperation operation: getJobcopyOperationList())
             {
-                return false;
+                fileContents = operation.perform(fileContents, encoding, env, logger);
+                if(fileContents == null)
+                {
+                    return false;
+                }
             }
         }
         logger.println("Copied contents:");

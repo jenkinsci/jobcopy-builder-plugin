@@ -50,6 +50,7 @@ import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
 
 import org.jvnet.hudson.test.HudsonTestCase;
+import org.jvnet.hudson.test.recipes.WithPlugin;
 import org.xml.sax.SAXException;
 
 /**
@@ -768,6 +769,8 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         {
             JobPropertyImpl promotion = new JobPropertyImpl(fromJob);
             
+            fromJob.addProperty(promotion);
+            
             PromotionProcess process1 = promotion.addProcess("Downstream");
             process1.icon = "Gold Star";
             process1.conditions.add(new DownstreamPassCondition("Downstream-Test-1"));
@@ -846,7 +849,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertNotNull("Copy all files", process2);
             assertEquals("Copy all files", "Green Star", process2.getIcon());
             assertEquals("Copy all files", 1, process2.conditions.size());
-            assertTrue("Copy all files", process1.conditions.get(0) instanceof ManualCondition);
+            assertTrue("Copy all files", process2.conditions.get(0) instanceof ManualCondition);
             
             toJob.delete();
         }
@@ -944,7 +947,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                 PromotionProcess process1 = promotion.getItem("Downstream");
                 assertNotNull("Overwrite: Create a job", process1);
                 assertTrue("Overwrite: Create a job", process1.conditions.get(0) instanceof DownstreamPassCondition);
-                assertEquals("Overwrite: Create a job", "Downstream-Test-2", ((DownstreamPassCondition)process1.conditions.get(0)).getJobs());
+                assertEquals("Overwrite: Create a job", "Downstream-Test-1", ((DownstreamPassCondition)process1.conditions.get(0)).getJobs());
             }
             
             // not overwrite
@@ -959,7 +962,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                 filesetList.add(new AdditionalFileset(
                         "promotions/*/config.xml",
                         null,
-                        true,
+                        false,
                         opList
                 ));
                 
@@ -1025,7 +1028,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                         filesetList
                 );
                 
-                FreeStyleProject project = createFreeStyleProject("testPerformWithAdditionalFileset5");
+                FreeStyleProject project = createFreeStyleProject("testPerformWithAdditionalFileset6");
                 project.getBuildersList().add(target);
                 
                 FreeStyleBuild b = project.scheduleBuild2(
