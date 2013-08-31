@@ -30,6 +30,7 @@ import hudson.XmlFile;
 import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.DescriptorExtensionList;
+import hudson.matrix.MatrixProject;
 import hudson.model.TopLevelItem;
 import hudson.model.BuildListener;
 import hudson.model.Job;
@@ -284,8 +285,35 @@ public class JobcopyBuilder extends Builder implements Serializable
         {
             listener.getLogger().println(String.format("Updating %s", toJobNameExpanded));
             AbstractItem target = (AbstractItem)toJob;
-            InputStream is = new ByteArrayInputStream(jobConfigXmlString.getBytes(encoding)); 
-            target.updateByXml(new StreamSource(is));
+            InputStream is = new ByteArrayInputStream(jobConfigXmlString.getBytes(encoding));
+            
+            String combinationFilter = null;
+            if(target instanceof MatrixProject)
+            {
+                MatrixProject matrix = (MatrixProject)target;
+                // Workaround for the case combinationFilter is removed.
+                // In that case, updateByXml does not update combinationFilter,
+                // for combinationFilter is not written in XML.
+                // So reset it here in advance. 
+                // It will be overwritten if defined.
+                combinationFilter = matrix.getCombinationFilter();
+                matrix.setCombinationFilter(null);
+            }
+            
+            try
+            {
+                target.updateByXml(new StreamSource(is));
+            }
+            catch(IOException e)
+            {
+                if(combinationFilter != null)
+                {
+                    // recover combinationFilter.
+                    MatrixProject matrix = (MatrixProject)target;
+                    matrix.setCombinationFilter(combinationFilter);
+                }
+                throw e;
+            }
         }
         
         boolean failed = false;

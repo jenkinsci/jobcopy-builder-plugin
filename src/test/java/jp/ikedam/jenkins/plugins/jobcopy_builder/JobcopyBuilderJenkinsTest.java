@@ -1086,21 +1086,24 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
     // https://github.com/ikedam/jobcopy-builder/issues/11
     public void testOverwritingMatrix() throws Exception
     {
+        String destProjectName = "destProject";
         Axis axis1 = new TextAxis("axis1", "value1-1", "value1-2");
         Axis axis2 = new TextAxis("axis2", "value2-1", "value2-2");
+        String combinationFilter = "!(axis1 == \"value1-1\" && axis2 == \"value2-1\")";
+        
         MatrixProject srcProject = createMatrixProject();
         srcProject.setAxes(new AxisList(
                 axis1,
                 axis2
         ));
-        srcProject.setCombinationFilter("!(axis1 == \"value1-1\" && axis2 == \"value2-1\")");
+        srcProject.setCombinationFilter(combinationFilter);
         
         srcProject.save();
         
         FreeStyleProject copier = createFreeStyleProject();
         copier.getBuildersList().add(new JobcopyBuilder(
                         srcProject.getName(),
-                        "destProject",
+                        destProjectName,
                         true,
                         Collections.<JobcopyOperation>emptyList(),
                         Collections.<AdditionalFileset>emptyList()
@@ -1108,6 +1111,11 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         copier.save();
         
         assertBuildStatusSuccess(copier.scheduleBuild2(0));
+        {
+            MatrixProject p = jenkins.getItemByFullName(destProjectName, MatrixProject.class);
+            assertNotNull(p);
+            assertEquals(combinationFilter, p.getCombinationFilter());
+        }
         
         // Remove an axis and combination filter.
         srcProject.setCombinationFilter(null);
@@ -1116,5 +1124,24 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         srcProject.save();
         
         assertBuildStatusSuccess(copier.scheduleBuild2(0));
+        {
+            MatrixProject p = jenkins.getItemByFullName(destProjectName, MatrixProject.class);
+            assertNotNull(p);
+            assertNull(p.getCombinationFilter());
+        }
+        
+        srcProject.setAxes(new AxisList(
+                axis1,
+                axis2
+        ));
+        srcProject.setCombinationFilter(combinationFilter);
+        
+        srcProject.save();
+        assertBuildStatusSuccess(copier.scheduleBuild2(0));
+        {
+            MatrixProject p = jenkins.getItemByFullName(destProjectName, MatrixProject.class);
+            assertNotNull(p);
+            assertEquals(combinationFilter, p.getCombinationFilter());
+        }
     }
 }
