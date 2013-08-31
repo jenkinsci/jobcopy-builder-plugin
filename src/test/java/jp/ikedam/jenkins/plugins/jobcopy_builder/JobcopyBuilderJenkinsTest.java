@@ -27,12 +27,17 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import jenkins.model.Jenkins;
 
 import hudson.EnvVars;
+import hudson.matrix.Axis;
+import hudson.matrix.AxisList;
+import hudson.matrix.MatrixProject;
+import hudson.matrix.TextAxis;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Cause;
 import hudson.model.Descriptor.FormException;
@@ -1076,5 +1081,40 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         WebClient wc = new WebClient();
         wc.getPage(project, "configure");
+    }
+    
+    // https://github.com/ikedam/jobcopy-builder/issues/11
+    public void testOverwritingMatrix() throws Exception
+    {
+        Axis axis1 = new TextAxis("axis1", "value1-1", "value1-2");
+        Axis axis2 = new TextAxis("axis2", "value2-1", "value2-2");
+        MatrixProject srcProject = createMatrixProject();
+        srcProject.setAxes(new AxisList(
+                axis1,
+                axis2
+        ));
+        srcProject.setCombinationFilter("!(axis1 == \"value1-1\" && axis2 == \"value2-1\")");
+        
+        srcProject.save();
+        
+        FreeStyleProject copier = createFreeStyleProject();
+        copier.getBuildersList().add(new JobcopyBuilder(
+                        srcProject.getName(),
+                        "destProject",
+                        true,
+                        Collections.<JobcopyOperation>emptyList(),
+                        Collections.<AdditionalFileset>emptyList()
+        ));
+        copier.save();
+        
+        assertBuildStatusSuccess(copier.scheduleBuild2(0));
+        
+        // Remove an axis and combination filter.
+        srcProject.setCombinationFilter(null);
+        srcProject.setAxes(new AxisList(axis1));
+        
+        srcProject.save();
+        
+        assertBuildStatusSuccess(copier.scheduleBuild2(0));
     }
 }
