@@ -28,10 +28,10 @@ THE SOFTWARE.
     <t:summary icon="package.png">
         <l:pane title="${%Copied Job}" width="3">
             <f:entry title="${%Copied From}">
-                <a href="${baseURL}/${it.fromUrl}">${it.fromJobName}</a>
+                <a href="${rootURL}/${it.fromUrl}">${it.fromJobName}</a>
             </f:entry>
             <f:entry title="${%Copied To}">
-                <a href="${baseURL}/${it.toUrl}">${it.toJobName}</a>
+                <a href="${rootURL}/${it.toUrl}">${it.toJobName}</a>
             </f:entry>
         </l:pane>
         <j:if test="${it.failed}">
