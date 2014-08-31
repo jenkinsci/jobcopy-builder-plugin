@@ -73,12 +73,12 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         JobcopyBuilder.DescriptorImpl descriptor = getDescriptor();
         
         // Job will be added after new job created.
-        ComboBoxModel beforeList = descriptor.doFillFromJobNameItems();
+        ComboBoxModel beforeList = descriptor.doFillFromJobNameItems(null);
         
         FreeStyleProject project = createFreeStyleProject("testDescriptorDoFillFromJobNameItems1");
         String newJobname = project.getName();
         
-        ComboBoxModel afterList = descriptor.doFillFromJobNameItems();
+        ComboBoxModel afterList = descriptor.doFillFromJobNameItems(null);
         
         assertEquals("new job created", beforeList.size() + 1, afterList.size());
         assertTrue("new job created", afterList.contains(newJobname));
@@ -95,7 +95,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "exist job",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckFromJobName(existJobname).kind
+                    descriptor.doCheckFromJobName(null, existJobname).kind
             );
         }
         
@@ -104,7 +104,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "exist job surrounded with blank",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckFromJobName("  " + existJobname + " ").kind
+                    descriptor.doCheckFromJobName(null, "  " + existJobname + " ").kind
             );
         }
         
@@ -113,7 +113,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "non-exist job",
                     FormValidation.Kind.WARNING,
-                    descriptor.doCheckFromJobName("nosuchjob").kind
+                    descriptor.doCheckFromJobName(null, "nosuchjob").kind
             );
         }
         
@@ -122,7 +122,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "uses variable",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckFromJobName("nosuchjob${name}").kind
+                    descriptor.doCheckFromJobName(null, "nosuchjob${name}").kind
             );
         }
         
@@ -132,7 +132,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "escaped dollar",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckFromJobName("$$nosuchjob").kind
+                    descriptor.doCheckFromJobName(null, "$$nosuchjob").kind
             );
         }
         
@@ -141,7 +141,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "null",
                     FormValidation.Kind.ERROR,
-                    descriptor.doCheckFromJobName(null).kind
+                    descriptor.doCheckFromJobName(null, null).kind
             );
         }
         
@@ -150,7 +150,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "empty",
                     FormValidation.Kind.ERROR,
-                    descriptor.doCheckFromJobName("").kind
+                    descriptor.doCheckFromJobName(null, "").kind
             );
         }
         
@@ -159,7 +159,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "blank",
                     FormValidation.Kind.ERROR,
-                    descriptor.doCheckFromJobName("  ").kind
+                    descriptor.doCheckFromJobName(null, "  ").kind
             );
         }
     }
@@ -175,7 +175,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "exist job, overwrite",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckToJobName(existJobname, true).kind
+                    descriptor.doCheckToJobName(null, existJobname, true).kind
             );
         }
         
@@ -184,7 +184,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "exist job, not overwrite",
                     FormValidation.Kind.WARNING,
-                    descriptor.doCheckToJobName(existJobname, false).kind
+                    descriptor.doCheckToJobName(null, existJobname, false).kind
             );
         }
         
@@ -193,7 +193,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "exist job surrounded with blank, not overwrite",
                     FormValidation.Kind.WARNING,
-                    descriptor.doCheckToJobName("  " + existJobname + "  ", false).kind
+                    descriptor.doCheckToJobName(null, "  " + existJobname + "  ", false).kind
             );
         }
         
@@ -202,7 +202,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "non-exist job",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckToJobName("nosuchjob", true).kind
+                    descriptor.doCheckToJobName(null, "nosuchjob", true).kind
             );
         }
         
@@ -211,7 +211,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "non-exist job",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckToJobName("nosuchjob", false).kind
+                    descriptor.doCheckToJobName(null, "nosuchjob", false).kind
             );
         }
         
@@ -220,7 +220,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "uses variable",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckToJobName("nosuchjob${name}", false).kind
+                    descriptor.doCheckToJobName(null, "nosuchjob${name}", false).kind
             );
         }
         
@@ -229,7 +229,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "null",
                     FormValidation.Kind.ERROR,
-                    descriptor.doCheckToJobName(null, false).kind
+                    descriptor.doCheckToJobName(null, null, false).kind
             );
         }
         
@@ -238,7 +238,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "empty",
                     FormValidation.Kind.ERROR,
-                    descriptor.doCheckToJobName("", false).kind
+                    descriptor.doCheckToJobName(null, "", false).kind
             );
         }
         
@@ -247,7 +247,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "blank",
                     FormValidation.Kind.ERROR,
-                    descriptor.doCheckToJobName("  ", false).kind
+                    descriptor.doCheckToJobName(null, "  ", false).kind
             );
         }
     }
