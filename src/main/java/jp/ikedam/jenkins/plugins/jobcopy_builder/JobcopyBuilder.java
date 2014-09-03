@@ -38,7 +38,6 @@ import hudson.model.Item;
 import hudson.model.ItemGroup;
 import hudson.model.TopLevelItem;
 import hudson.model.BuildListener;
-import hudson.model.Job;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractItem;
 import hudson.model.AbstractProject;
@@ -236,9 +235,9 @@ public class JobcopyBuilder extends Builder implements Serializable
             listener.getLogger().println(String.format("Error: Item '%s 'was not found.", fromJob));
             return false;
         }
-        else if(!(fromJob instanceof Job<?,?>))
+        else if(!(fromJob instanceof AbstractItem))
         {
-            listener.getLogger().println(String.format("Error: Item '%s' was found, but is not a job.", fromJob));
+            listener.getLogger().println(String.format("Error: Item '%s' was found, but cannot be copied (does not support AbstractItem).", fromJob));
             return false;
         }
         
@@ -259,7 +258,7 @@ public class JobcopyBuilder extends Builder implements Serializable
         // Retrieve the config.xml of the job copied from.
         listener.getLogger().println(String.format("Fetching configuration of %s...", fromJobNameExpanded));
         
-        XmlFile file = ((Job<?,?>)fromJob).getConfigFile();
+        XmlFile file = ((AbstractItem)fromJob).getConfigFile();
         String jobConfigXmlString = file.asString();
         String encoding = file.sniffEncoding();
         listener.getLogger().println("Original xml:");
@@ -504,7 +503,7 @@ public class JobcopyBuilder extends Builder implements Serializable
         {
             final ItemGroup<?> context = (project != null)?project.getParent():Jenkins.getInstance().getItemGroup();
             List<String> itemList = new ArrayList<String>(Lists.transform(
-                    Jenkins.getInstance().getAllItems(),
+                    Jenkins.getInstance().getAllItems(AbstractItem.class),
                     new Function<Item, String>()
                     {
                         public String apply(Item input)
@@ -608,6 +607,10 @@ public class JobcopyBuilder extends Builder implements Serializable
                 if(warnIfExists)
                 {
                     return FormValidation.warning(Messages.JobCopyBuilder_JobName_exists());
+                }
+                if(!(job instanceof AbstractItem))
+                {
+                    return FormValidation.warning(Messages.JobCopyBuilder_JobName_notAbstractItem());
                 }
             }
             else

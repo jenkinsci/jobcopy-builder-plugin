@@ -1428,6 +1428,29 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             // overwrite
             assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
         }
+        
+        // copy a folder
+        {
+            FreeStyleProject copyJob = createFreeStyleProject();
+            String src = "folder1";
+            String dest = "newfolder";
+            assertNotNull(jenkins.getItemByFullName(src));
+            assertNull(jenkins.getItemByFullName(dest));
+            
+            copyJob.getBuildersList().add(
+                    new JobcopyBuilder(
+                            src,
+                            dest,
+                            true,
+                            Collections.<JobcopyOperation>emptyList(),
+                            Collections.<AdditionalFileset>emptyList()
+                    )
+            );
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            assertNotNull(jenkins.getItemByFullName(dest));
+            // overwrite
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+        }
     }
     
     public void testPerformWithFolderError() throws Exception
