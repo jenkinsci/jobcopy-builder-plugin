@@ -3,6 +3,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
+    <!-- ModifiableTopLevelItemGroup is since 1.480.3 -->
     <version>1.480.3</version><!-- which version of Jenkins is this plugin built against? -->
   </parent>
 
@@ -40,7 +41,7 @@
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>cloudbees-folder</artifactId>
       <version>4.0</version>
-      <optional>true</optional>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <!--Depended by cloudbees-folder, to suppress annoying messages on tests-->
