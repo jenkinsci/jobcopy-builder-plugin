@@ -303,6 +303,7 @@ public class JobcopyBuilder extends Builder implements Serializable
             if(!(toContext instanceof ModifiableTopLevelItemGroup))
             {
                 listener.getLogger().println(String.format("Error: Target folder '%s' does not support ModifiableTopLevelItemGroup", toContext.getFullName()));
+                return false;
             }
             
             toJob = ((ModifiableTopLevelItemGroup)toContext).createProjectFromXML(toJobNameExpanded, is);
