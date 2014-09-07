@@ -23,7 +23,10 @@
  */
 package jp.ikedam.jenkins.plugins.jobcopy_builder;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import hudson.Extension;
 import hudson.XmlFile;
@@ -31,9 +34,10 @@ import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.DescriptorExtensionList;
 import hudson.matrix.MatrixProject;
+import hudson.model.Item;
+import hudson.model.ItemGroup;
 import hudson.model.TopLevelItem;
 import hudson.model.BuildListener;
-import hudson.model.Job;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractItem;
 import hudson.model.AbstractProject;
@@ -42,17 +46,23 @@ import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import jenkins.model.ModifiableTopLevelItemGroup;
 import jenkins.model.Jenkins;
 
 import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Serializable;
 
+import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
 /**
@@ -186,6 +196,7 @@ public class JobcopyBuilder extends Builder implements Serializable
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
         throws IOException, InterruptedException
     {
+        ItemGroup<?> context = build.getProject().getRootProject().getParent();
         EnvVars env = build.getEnvironment(listener);
         
         if(StringUtils.isBlank(getFromJobName()))
@@ -217,21 +228,21 @@ public class JobcopyBuilder extends Builder implements Serializable
         listener.getLogger().println(String.format("Copying %s to %s", fromJobNameExpanded, toJobNameExpanded));
         
         // Reteive the job to be copied from.
-        TopLevelItem fromJob = Jenkins.getInstance().getItem(fromJobNameExpanded);
+        TopLevelItem fromJob = getRelative(fromJobNameExpanded, context, TopLevelItem.class);
         
         if(fromJob == null)
         {
-            listener.getLogger().println("Error: Item was not found.");
+            listener.getLogger().println(String.format("Error: Item '%s 'was not found.", fromJob));
             return false;
         }
-        else if(!(fromJob instanceof Job<?,?>))
+        else if(!(fromJob instanceof AbstractItem))
         {
-            listener.getLogger().println("Error: Item was found, but is not a job.");
+            listener.getLogger().println(String.format("Error: Item '%s' was found, but cannot be copied (does not support AbstractItem).", fromJob));
             return false;
         }
         
         // Check whether the job to be copied to is already exists.
-        TopLevelItem toJob = Jenkins.getInstance().getItem(toJobNameExpanded);
+        TopLevelItem toJob = getRelative(toJobNameExpanded, context, TopLevelItem.class);
         if(toJob != null){
             listener.getLogger().println(String.format("Already exists: %s", toJobNameExpanded));
             if(!isOverwrite()){
@@ -245,10 +256,9 @@ public class JobcopyBuilder extends Builder implements Serializable
         }
         
         // Retrieve the config.xml of the job copied from.
-        // TODO: what happens if this runs on a slave node?
         listener.getLogger().println(String.format("Fetching configuration of %s...", fromJobNameExpanded));
         
-        XmlFile file = ((Job<?,?>)fromJob).getConfigFile();
+        XmlFile file = ((AbstractItem)fromJob).getConfigFile();
         String jobConfigXmlString = file.asString();
         String encoding = file.sniffEncoding();
         listener.getLogger().println("Original xml:");
@@ -274,7 +284,28 @@ public class JobcopyBuilder extends Builder implements Serializable
             // Create the job copied to.
             listener.getLogger().println(String.format("Creating %s", toJobNameExpanded));
             InputStream is = new ByteArrayInputStream(jobConfigXmlString.getBytes(encoding)); 
-            toJob = Jenkins.getInstance().createProjectFromXML(toJobNameExpanded, is);
+            ItemGroup<?> toContext = context;
+            if(toJobNameExpanded.lastIndexOf('/')  >= 0)
+            {
+                int pos = toJobNameExpanded.lastIndexOf('/');
+                String parentName = toJobNameExpanded.substring(0, pos);
+                toJobNameExpanded = toJobNameExpanded.substring(pos + 1);
+                
+                toContext = getRelative(parentName, context, ItemGroup.class);
+                if(toContext == null)
+                {
+                    listener.getLogger().println(String.format("Error: Target folder '%s' was not found.", parentName));
+                    return false;
+                }
+            }
+            
+            if(!(toContext instanceof ModifiableTopLevelItemGroup))
+            {
+                listener.getLogger().println(String.format("Error: Target folder '%s' does not support ModifiableTopLevelItemGroup", toContext.getFullName()));
+                return false;
+            }
+            
+            toJob = ((ModifiableTopLevelItemGroup)toContext).createProjectFromXML(toJobNameExpanded, is);
             if(toJob == null)
             {
                 listener.getLogger().println(String.format("Failed to create %s", toJobNameExpanded));
@@ -302,7 +333,7 @@ public class JobcopyBuilder extends Builder implements Serializable
             
             try
             {
-                target.updateByXml(new StreamSource(is));
+                target.updateByXml((Source)new StreamSource(is));
             }
             catch(IOException e)
             {
@@ -331,13 +362,80 @@ public class JobcopyBuilder extends Builder implements Serializable
             
             // Do null update to reload the configuration.
             AbstractItem target = (AbstractItem)toJob;
-            target.updateByXml(new StreamSource(target.getConfigFile().readRaw()));
+            target.updateByXml((Source)new StreamSource(target.getConfigFile().readRaw()));
         }
         
         // add the information of jobs copied from and to to the build.
         build.addAction(new CopiedjobinfoAction(fromJob, toJob, failed));
         
         return true;
+    }
+    
+    /**
+     * Reimplementation of {@link Jenkins#getItem(String, ItemGroup, Class)}
+     * 
+     * Existing implementation has following problems:
+     * * Falls back to {@link Jenkins#getItemByFullName(String)}
+     * * Cannot get {@link ItemGroup}
+     * 
+     * @param pathName
+     * @param context
+     * @param klass
+     * @return
+     */
+    public static <T> T getRelative(String pathName, ItemGroup<?> context, Class<T> klass)
+    {
+        if(context==null)
+        {
+            context = Jenkins.getInstance().getItemGroup();
+        }
+        if (pathName==null)
+        {
+            return null;
+        }
+        
+        if (pathName.startsWith("/"))
+        {
+            // absolute
+            Item item = Jenkins.getInstance().getItemByFullName(pathName);
+            return klass.isInstance(item)?klass.cast(item):null;
+        }
+        
+        Object/*Item|ItemGroup*/ ctx = context;
+        
+        StringTokenizer tokens = new StringTokenizer(pathName,"/");
+        while(tokens.hasMoreTokens())
+        {
+            String s = tokens.nextToken();
+            if(s.equals(".."))
+            {
+                if(!(ctx instanceof Item))
+                {
+                    // can't go up further
+                    return null;
+                }
+                ctx = ((Item)ctx).getParent();
+                continue;
+            }
+            if(s.equals("."))
+            {
+                continue;
+            }
+            
+            if(!(ctx instanceof ItemGroup))
+            {
+                return null;
+            }
+            ItemGroup<?> g = (ItemGroup<?>)ctx;
+            Item i = g.getItem(s);
+            if (i == null || !i.hasPermission(Item.READ))
+            {
+                return null;
+            }
+            ctx=i;
+        }
+        
+        return klass.isInstance(ctx)?klass.cast(ctx):null;
     }
     
     /**
@@ -399,11 +497,23 @@ public class JobcopyBuilder extends Builder implements Serializable
          * 
          * Used for the autocomplete of From Job Name.
          * 
-         * @return the list of jobs
+         * @return the list of names of jobs
          */
-        public ComboBoxModel doFillFromJobNameItems()
+        public ComboBoxModel doFillFromJobNameItems(@AncestorInPath AbstractProject<?,?> project)
         {
-            return new ComboBoxModel(Jenkins.getInstance().getTopLevelItemNames());
+            final ItemGroup<?> context = (project != null)?project.getParent():Jenkins.getInstance().getItemGroup();
+            List<String> itemList = new ArrayList<String>(Lists.transform(
+                    Jenkins.getInstance().getAllItems(AbstractItem.class),
+                    new Function<Item, String>()
+                    {
+                        public String apply(Item input)
+                        {
+                            return input.getRelativeNameFrom(context);
+                        }
+                    }
+            ));
+            Collections.sort(itemList);
+            return new ComboBoxModel(itemList);
         }
         
         /**
@@ -476,8 +586,9 @@ public class JobcopyBuilder extends Builder implements Serializable
          * @param warnIfNotExists
          * @return
          */
-        public FormValidation doCheckJobName(String jobName, boolean warnIfExists, boolean warnIfNotExists)
+        public FormValidation doCheckJobName(AbstractProject<?,?> project, String jobName, boolean warnIfExists, boolean warnIfNotExists)
         {
+            ItemGroup<?> context = (project != null)?project.getParent():Jenkins.getInstance().getItemGroup();
             jobName = StringUtils.trim(jobName);
             
             if(StringUtils.isBlank(jobName))
@@ -489,13 +600,17 @@ public class JobcopyBuilder extends Builder implements Serializable
                 return FormValidation.ok();
             }
             
-            TopLevelItem job = Jenkins.getInstance().getItem(jobName);
+            TopLevelItem job = getRelative(jobName, context, TopLevelItem.class);
             if(job != null)
             {
                 // job exists
                 if(warnIfExists)
                 {
                     return FormValidation.warning(Messages.JobCopyBuilder_JobName_exists());
+                }
+                if(!(job instanceof AbstractItem))
+                {
+                    return FormValidation.warning(Messages.JobCopyBuilder_JobName_notAbstractItem());
                 }
             }
             else
@@ -516,9 +631,9 @@ public class JobcopyBuilder extends Builder implements Serializable
          * @param fromJobName
          * @return
          */
-        public FormValidation doCheckFromJobName(@QueryParameter String fromJobName)
+        public FormValidation doCheckFromJobName(@AncestorInPath AbstractProject<?,?> project, @QueryParameter String fromJobName)
         {
-            return doCheckJobName(fromJobName, false, true);
+            return doCheckJobName(project, fromJobName, false, true);
         }
         
         /**
@@ -528,9 +643,9 @@ public class JobcopyBuilder extends Builder implements Serializable
          * @param overwrite
          * @return FormValidation object.
          */
-        public FormValidation doCheckToJobName(@QueryParameter String toJobName, @QueryParameter boolean overwrite)
+        public FormValidation doCheckToJobName(@AncestorInPath AbstractProject<?,?> project, @QueryParameter String toJobName, @QueryParameter boolean overwrite)
         {
-            return doCheckJobName(toJobName, !overwrite, false);
+            return doCheckJobName(project, toJobName, !overwrite, false);
         }
     }
 }

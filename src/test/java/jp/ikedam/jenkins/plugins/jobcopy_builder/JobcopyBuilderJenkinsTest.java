@@ -27,12 +27,12 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import jenkins.model.Jenkins;
-
 import hudson.EnvVars;
 import hudson.matrix.Axis;
 import hudson.matrix.AxisList;
@@ -57,6 +57,8 @@ import hudson.util.FormValidation;
 import org.jvnet.hudson.test.HudsonTestCase;
 import org.xml.sax.SAXException;
 
+import com.cloudbees.hudson.plugins.folder.Folder;
+
 /**
  * Tests for JobcopyBuilder, corresponded to Jenkins.
  *
@@ -73,15 +75,41 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         JobcopyBuilder.DescriptorImpl descriptor = getDescriptor();
         
         // Job will be added after new job created.
-        ComboBoxModel beforeList = descriptor.doFillFromJobNameItems();
+        ComboBoxModel beforeList = descriptor.doFillFromJobNameItems(null);
         
         FreeStyleProject project = createFreeStyleProject("testDescriptorDoFillFromJobNameItems1");
         String newJobname = project.getName();
         
-        ComboBoxModel afterList = descriptor.doFillFromJobNameItems();
+        ComboBoxModel afterList = descriptor.doFillFromJobNameItems(null);
         
         assertEquals("new job created", beforeList.size() + 1, afterList.size());
         assertTrue("new job created", afterList.contains(newJobname));
+    }
+    
+    public void testDescriptorDoFillFromJobNameItemsWithFolder() throws IOException
+    {
+        JobcopyBuilder.DescriptorImpl descriptor = getDescriptor();
+        
+        // job1
+        // folder1/job2
+        // folder1/folder2/job3
+        FreeStyleProject job1 = createFreeStyleProject("job1");
+        Folder folder1 = jenkins.createProject(Folder.class, "folder1");
+        FreeStyleProject job2 = folder1.createProject(FreeStyleProject.class, "job2");
+        Folder folder2 = folder1.createProject(Folder.class, "folder2");
+        FreeStyleProject job3 = folder2.createProject(FreeStyleProject.class, "job3");
+        
+        assertEquals(
+                Arrays.asList("folder1", "folder1/folder2", "folder1/folder2/job3", "folder1/job2", "job1"),
+                descriptor.doFillFromJobNameItems(job1)
+        );
+        assertEquals(
+                Arrays.asList("../folder1", "../job1", "folder2", "folder2/job3", "job2"),
+                descriptor.doFillFromJobNameItems(job2)
+        );
+        assertEquals(Arrays.asList(
+                "../../folder1", "../../job1", "../folder2", "../job2", "job3"), descriptor.doFillFromJobNameItems(job3)
+        );
     }
     
     public void testDescriptorDoCheckFromJobName() throws IOException
@@ -95,7 +123,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "exist job",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckFromJobName(existJobname).kind
+                    descriptor.doCheckFromJobName(null, existJobname).kind
             );
         }
         
@@ -104,7 +132,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "exist job surrounded with blank",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckFromJobName("  " + existJobname + " ").kind
+                    descriptor.doCheckFromJobName(null, "  " + existJobname + " ").kind
             );
         }
         
@@ -113,7 +141,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "non-exist job",
                     FormValidation.Kind.WARNING,
-                    descriptor.doCheckFromJobName("nosuchjob").kind
+                    descriptor.doCheckFromJobName(null, "nosuchjob").kind
             );
         }
         
@@ -122,7 +150,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "uses variable",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckFromJobName("nosuchjob${name}").kind
+                    descriptor.doCheckFromJobName(null, "nosuchjob${name}").kind
             );
         }
         
@@ -132,7 +160,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "escaped dollar",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckFromJobName("$$nosuchjob").kind
+                    descriptor.doCheckFromJobName(null, "$$nosuchjob").kind
             );
         }
         
@@ -141,7 +169,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "null",
                     FormValidation.Kind.ERROR,
-                    descriptor.doCheckFromJobName(null).kind
+                    descriptor.doCheckFromJobName(null, null).kind
             );
         }
         
@@ -150,7 +178,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "empty",
                     FormValidation.Kind.ERROR,
-                    descriptor.doCheckFromJobName("").kind
+                    descriptor.doCheckFromJobName(null, "").kind
             );
         }
         
@@ -159,9 +187,84 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "blank",
                     FormValidation.Kind.ERROR,
-                    descriptor.doCheckFromJobName("  ").kind
+                    descriptor.doCheckFromJobName(null, "  ").kind
             );
         }
+    }
+    
+    public void testDescriptorDoCheckFromJobNameWithFolder() throws IOException
+    {
+        JobcopyBuilder.DescriptorImpl descriptor = getDescriptor();
+        
+        // job1
+        // folder1/job2
+        // folder1/folder2/job3
+        FreeStyleProject job1 = createFreeStyleProject("job1");
+        Folder folder1 = jenkins.createProject(Folder.class, "folder1");
+        FreeStyleProject job2 = folder1.createProject(FreeStyleProject.class, "job2");
+        Folder folder2 = folder1.createProject(Folder.class, "folder2");
+        @SuppressWarnings("unused")
+        FreeStyleProject job3 = folder2.createProject(FreeStyleProject.class, "job3");
+        
+        // exist job
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckFromJobName(job1, "job1").kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckFromJobName(job1, "folder1/job2").kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckFromJobName(job1, "folder1/../job1").kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckFromJobName(job2, "../job1").kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckFromJobName(job2, "job2").kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckFromJobName(job2, "folder2/job3").kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckFromJobName(job2, "folder2/../job2").kind
+        );
+        
+        // non-exist job
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckFromJobName(job1, "job2").kind
+        );
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckFromJobName(job1, "folder1/job1").kind
+        );
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckFromJobName(job1, "folder1/../job2").kind
+        );
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckFromJobName(job2, "job1").kind
+        );
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckFromJobName(job2, "folder1/job2").kind
+        );
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckFromJobName(job2, "job3").kind
+        );
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckFromJobName(job2, "../job2").kind
+        );
     }
     
     public void testDescriptorDoCheckToJobName() throws IOException
@@ -175,7 +278,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "exist job, overwrite",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckToJobName(existJobname, true).kind
+                    descriptor.doCheckToJobName(null, existJobname, true).kind
             );
         }
         
@@ -184,7 +287,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "exist job, not overwrite",
                     FormValidation.Kind.WARNING,
-                    descriptor.doCheckToJobName(existJobname, false).kind
+                    descriptor.doCheckToJobName(null, existJobname, false).kind
             );
         }
         
@@ -193,7 +296,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "exist job surrounded with blank, not overwrite",
                     FormValidation.Kind.WARNING,
-                    descriptor.doCheckToJobName("  " + existJobname + "  ", false).kind
+                    descriptor.doCheckToJobName(null, "  " + existJobname + "  ", false).kind
             );
         }
         
@@ -202,7 +305,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "non-exist job",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckToJobName("nosuchjob", true).kind
+                    descriptor.doCheckToJobName(null, "nosuchjob", true).kind
             );
         }
         
@@ -211,7 +314,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "non-exist job",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckToJobName("nosuchjob", false).kind
+                    descriptor.doCheckToJobName(null, "nosuchjob", false).kind
             );
         }
         
@@ -220,7 +323,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "uses variable",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckToJobName("nosuchjob${name}", false).kind
+                    descriptor.doCheckToJobName(null, "nosuchjob${name}", false).kind
             );
         }
         
@@ -229,7 +332,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "null",
                     FormValidation.Kind.ERROR,
-                    descriptor.doCheckToJobName(null, false).kind
+                    descriptor.doCheckToJobName(null, null, false).kind
             );
         }
         
@@ -238,7 +341,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "empty",
                     FormValidation.Kind.ERROR,
-                    descriptor.doCheckToJobName("", false).kind
+                    descriptor.doCheckToJobName(null, "", false).kind
             );
         }
         
@@ -247,9 +350,145 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertEquals(
                     "blank",
                     FormValidation.Kind.ERROR,
-                    descriptor.doCheckToJobName("  ", false).kind
+                    descriptor.doCheckToJobName(null, "  ", false).kind
             );
         }
+    }
+    
+    public void testDescriptorDoCheckToJobNameWithFolder() throws IOException
+    {
+        JobcopyBuilder.DescriptorImpl descriptor = getDescriptor();
+        // job1
+        // folder1/job2
+        // folder1/folder2/job3
+        FreeStyleProject job1 = createFreeStyleProject("job1");
+        Folder folder1 = jenkins.createProject(Folder.class, "folder1");
+        FreeStyleProject job2 = folder1.createProject(FreeStyleProject.class, "job2");
+        Folder folder2 = folder1.createProject(Folder.class, "folder2");
+        @SuppressWarnings("unused")
+        FreeStyleProject job3 = folder2.createProject(FreeStyleProject.class, "job3");
+        
+        
+        // exist job, overwrite
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job1, "job1", true).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job1, "folder1/job2", true).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job1, "folder1/../job1", true).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job2, "../job1", true).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job2, "job2", true).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job2, "folder2/job3", true).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job2, "folder2/../job2", true).kind
+        );
+        
+        // exist job, not overwrite
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckToJobName(job1, "job1", false).kind
+        );
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckToJobName(job1, "folder1/job2", false).kind
+        );
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckToJobName(job1, "folder1/../job1", false).kind
+        );
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckToJobName(job2, "../job1", false).kind
+        );
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckToJobName(job2, "job2", false).kind
+        );
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckToJobName(job2, "folder2/job3", false).kind
+        );
+        assertEquals(
+                FormValidation.Kind.WARNING,
+                descriptor.doCheckToJobName(job2, "folder2/../job2", false).kind
+        );
+        
+        // non-exist job, overwrite
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job1, "job2", true).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job1, "folder1/job1", true).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job1, "folder1/../job2", true).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job2, "job1", true).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job2, "folder1/job2", true).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job2, "job3", true).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job2, "../job2", true).kind
+        );
+        
+        
+        // non-exist job, not overwrite
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job1, "job2", false).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job1, "folder1/job1", false).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job1, "folder1/../job2", false).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job2, "job1", false).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job2, "folder1/job2", false).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job2, "job3", false).kind
+        );
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckToJobName(job2, "../job2", false).kind
+        );
     }
     
     /**
@@ -1063,6 +1302,202 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             }
             
             toJob.delete();
+        }
+    }
+    
+    public void testPerformWithFolder() throws Exception
+    {
+        Folder folder1 = jenkins.createProject(Folder.class, "folder1");
+        Folder subfolder1 = folder1.createProject(Folder.class, "subfolder1");
+        jenkins.createProject(Folder.class, "folder2");
+        createFreeStyleProject("srcJob");
+        folder1.createProject(FreeStyleProject.class, "srcJobInFolder");
+        subfolder1.createProject(FreeStyleProject.class, "srcJobInSubFolder");
+        
+        // To a job in a folder
+        {
+            FreeStyleProject copyJob = createFreeStyleProject();
+            String src = "srcJob";
+            String dest = "folder1/dest1";
+            assertNotNull(jenkins.getItemByFullName(src));
+            assertNull(jenkins.getItemByFullName(dest));
+            
+            copyJob.getBuildersList().add(
+                    new JobcopyBuilder(
+                            src,
+                            dest,
+                            true,
+                            Collections.<JobcopyOperation>emptyList(),
+                            Collections.<AdditionalFileset>emptyList()
+                    )
+            );
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            assertNotNull(jenkins.getItemByFullName(dest));
+            // overwrite
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+        }
+        
+        // From a job in a folder, To a job in a folder
+        {
+            FreeStyleProject copyJob = createFreeStyleProject();
+            String src = "folder1/srcJobInFolder";
+            String dest = "folder2/dest2";
+            assertNotNull(jenkins.getItemByFullName(src));
+            assertNull(jenkins.getItemByFullName(dest));
+            
+            copyJob.getBuildersList().add(
+                    new JobcopyBuilder(
+                            src,
+                            dest,
+                            true,
+                            Collections.<JobcopyOperation>emptyList(),
+                            Collections.<AdditionalFileset>emptyList()
+                    )
+            );
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            assertNotNull(jenkins.getItemByFullName(dest));
+            // overwrite
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+        }
+        
+        // run in a folder
+        {
+            FreeStyleProject copyJob = folder1.createProject(FreeStyleProject.class, "copier3");
+            String src = "srcJobInFolder";
+            String dest = "dest3";
+            assertNotNull(jenkins.getItemByFullName(String.format("folder1/%s", src)));
+            assertNull(jenkins.getItemByFullName(String.format("folder1/%s", dest)));
+            
+            copyJob.getBuildersList().add(
+                    new JobcopyBuilder(
+                            src,
+                            dest,
+                            true,
+                            Collections.<JobcopyOperation>emptyList(),
+                            Collections.<AdditionalFileset>emptyList()
+                    )
+            );
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            assertNotNull(jenkins.getItemByFullName(String.format("folder1/%s", dest)));
+            // overwrite
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+        }
+        
+        // run in a folder, use subfolders
+        {
+            FreeStyleProject copyJob = folder1.createProject(FreeStyleProject.class, "copier4");
+            String src = "subfolder1/srcJobInSubFolder";
+            String dest = "subfolder1/dest5";
+            assertNotNull(jenkins.getItemByFullName(String.format("folder1/%s", src)));
+            assertNull(jenkins.getItemByFullName(String.format("folder1/%s", dest)));
+            
+            copyJob.getBuildersList().add(
+                    new JobcopyBuilder(
+                            src,
+                            dest,
+                            true,
+                            Collections.<JobcopyOperation>emptyList(),
+                            Collections.<AdditionalFileset>emptyList()
+                    )
+            );
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            assertNotNull(jenkins.getItemByFullName(String.format("folder1/%s", dest)));
+            // overwrite
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+        }
+        
+        // run in a folder, use parent
+        {
+            FreeStyleProject copyJob = folder1.createProject(FreeStyleProject.class, "copier5");
+            String src = "../srcJob";
+            String dest = "../dest6";
+            assertNotNull(jenkins.getItemByFullName(src.replace("../", "")));
+            assertNull(jenkins.getItemByFullName(dest.replace("../", "")));
+            
+            copyJob.getBuildersList().add(
+                    new JobcopyBuilder(
+                            src,
+                            dest,
+                            true,
+                            Collections.<JobcopyOperation>emptyList(),
+                            Collections.<AdditionalFileset>emptyList()
+                    )
+            );
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            assertNotNull(jenkins.getItemByFullName(dest.replace("../", "")));
+            // overwrite
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+        }
+        
+        // copy a folder
+        {
+            FreeStyleProject copyJob = createFreeStyleProject();
+            String src = "folder1";
+            String dest = "newfolder";
+            assertNotNull(jenkins.getItemByFullName(src));
+            assertNull(jenkins.getItemByFullName(dest));
+            
+            copyJob.getBuildersList().add(
+                    new JobcopyBuilder(
+                            src,
+                            dest,
+                            true,
+                            Collections.<JobcopyOperation>emptyList(),
+                            Collections.<AdditionalFileset>emptyList()
+                    )
+            );
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            assertNotNull(jenkins.getItemByFullName(dest));
+            // overwrite
+            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+        }
+    }
+    
+    public void testPerformWithFolderError() throws Exception
+    {
+        createFreeStyleProject("srcJob");
+        
+        // Destination folder does not exist
+        {
+            FreeStyleProject copyJob = createFreeStyleProject();
+            String src = "srcJob";
+            String dest = "nosuchfolder/dest1";
+            assertNotNull(jenkins.getItemByFullName(src));
+            assertNull(jenkins.getItemByFullName("nosuchfolder"));
+            assertNull(jenkins.getItemByFullName(dest));
+            
+            copyJob.getBuildersList().add(
+                    new JobcopyBuilder(
+                            src,
+                            dest,
+                            true,
+                            Collections.<JobcopyOperation>emptyList(),
+                            Collections.<AdditionalFileset>emptyList()
+                    )
+            );
+            assertBuildStatus(Result.FAILURE, copyJob.scheduleBuild2(0).get());
+        }
+        
+        // Copy into MatrixProject
+        {
+            createMatrixProject("matrixtest");
+            FreeStyleProject copyJob = createFreeStyleProject();
+            String src = "srcJob";
+            String dest = "matrixtest/dest1";
+            assertNotNull(jenkins.getItemByFullName(src));
+            assertNull(jenkins.getItemByFullName("nosuchfolder"));
+            assertNull(jenkins.getItemByFullName(dest));
+            
+            copyJob.getBuildersList().add(
+                    new JobcopyBuilder(
+                            src,
+                            dest,
+                            true,
+                            Collections.<JobcopyOperation>emptyList(),
+                            Collections.<AdditionalFileset>emptyList()
+                    )
+            );
+            assertBuildStatus(Result.FAILURE, copyJob.scheduleBuild2(0).get());
         }
     }
     
