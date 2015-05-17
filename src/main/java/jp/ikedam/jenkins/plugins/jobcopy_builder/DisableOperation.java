@@ -36,7 +36,7 @@ import hudson.model.Descriptor;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
- * Disables the job if the job copied from is disabled.
+ * Disables the job if the job copied from is enabled.
  */
 public class DisableOperation extends AbstractXmlJobcopyOperation implements Serializable
 {
