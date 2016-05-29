@@ -32,6 +32,7 @@ import java.io.PrintStream;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 
+import javax.annotation.CheckForNull;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -54,6 +55,8 @@ import org.w3c.dom.Text;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * Abstract class for job copy operation using XML DOM.
@@ -173,12 +176,19 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
                 exception.printStackTrace(logger);
             }
         });
-        InputStream is = new ByteArrayInputStream((encoding != null)?
-                xmlString.getBytes(encoding)
-                :xmlString.getBytes()
-                ); 
+        InputStream is = createInputStreamFromString(xmlString, encoding);
         
         return builder.parse(is);
+    }
+    
+    @SuppressFBWarnings("DM_DEFAULT_ENCODING")
+    private InputStream createInputStreamFromString(String str, @CheckForNull String encoding)
+            throws UnsupportedEncodingException
+    {
+        return new ByteArrayInputStream((encoding != null)?
+            str.getBytes(encoding)
+            :str.getBytes()
+        ); 
     }
     
     /****** Utility methods working with XML. Usable from subclasses. ******/
