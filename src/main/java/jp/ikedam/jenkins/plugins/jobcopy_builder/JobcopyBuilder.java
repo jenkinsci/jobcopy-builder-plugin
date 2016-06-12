@@ -232,7 +232,7 @@ public class JobcopyBuilder extends Builder implements Serializable
         
         if(fromJob == null)
         {
-            listener.getLogger().println(String.format("Error: Item '%s 'was not found.", fromJob));
+            listener.getLogger().println(String.format("Error: Item '%s 'was not found.", fromJobNameExpanded));
             return false;
         }
         else if(!(fromJob instanceof AbstractItem))
