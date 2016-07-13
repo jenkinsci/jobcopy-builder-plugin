@@ -50,7 +50,7 @@ public abstract class JobcopyOperation extends AbstractDescribableImpl<JobcopyOp
     /**
      * Return all the available JobcopyOperation whose DescriptorImpl annotated with Extension.
      * 
-     * @return
+     * @return a list of JobcopyOperation
      */
     static public DescriptorExtensionList<JobcopyOperation,Descriptor<JobcopyOperation>> all()
     {
