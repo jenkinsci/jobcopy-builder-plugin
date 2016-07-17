@@ -44,6 +44,12 @@
   
   <dependencies>
     <dependency>
+      <!-- The one depended by Jenkins 1.532 to avoid NoSuchMethodError of jenkins-test-harness -->
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.11</version>
+    </dependency>
+    <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>cloudbees-folder</artifactId>
       <version>4.0</version>
