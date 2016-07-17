@@ -111,6 +111,7 @@ public class JobcopyBuilder extends Builder implements Serializable
      * If the copied-to job is already exists,
      * jobcopy build step works as following depending on this value.
      * <table>
+     *     <caption>How jobcopy build step works with {@code isOverwrite}</caption>
      *     <tr>
      *         <th>isOverwrite</th>
      *         <th>behavior</th>
@@ -182,15 +183,7 @@ public class JobcopyBuilder extends Builder implements Serializable
     }
     
     /**
-     * Performs the build step.
-     * 
-     * @param build
-     * @param launcher
-     * @param listener
-     * @return  whether the process succeeded.
-     * @throws IOException
-     * @throws InterruptedException
-     * @see hudson.tasks.BuildStepCompatibilityLayer#perform(hudson.model.AbstractBuild, hudson.Launcher, hudson.model.BuildListener)
+     * {@inheritDoc}
      */
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
@@ -378,10 +371,11 @@ public class JobcopyBuilder extends Builder implements Serializable
      * * Falls back to {@link Jenkins#getItemByFullName(String)}
      * * Cannot get {@link ItemGroup}
      * 
-     * @param pathName
-     * @param context
-     * @param klass
-     * @return
+     * @param pathName relative path to an item to retrieve
+     * @param context context to calculate {@code pathName} from.
+     * @param klass class of the item to retrieve
+     * @param <T> class of the item to retrieve
+     * @return an item
      */
     public static <T> T getRelative(String pathName, ItemGroup<?> context, Class<T> klass)
     {
@@ -497,6 +491,7 @@ public class JobcopyBuilder extends Builder implements Serializable
          * 
          * Used for the autocomplete of From Job Name.
          * 
+         * @param project the current job
          * @return the list of names of jobs
          */
         public ComboBoxModel doFillFromJobNameItems(@AncestorInPath AbstractProject<?,?> project)
@@ -537,6 +532,7 @@ public class JobcopyBuilder extends Builder implements Serializable
          * 
          * Returns as following:
          * <table>
+         *     <caption>Return values for parameter combinations</caption>
          *     <tr>
          *         <th>jobName</th>
          *         <th>warnIfExists</th>
@@ -544,47 +540,48 @@ public class JobcopyBuilder extends Builder implements Serializable
          *         <th>Returns</th>
          *     </tr>
          *     <tr>
-         *         <td>Blank</th>
-         *         <th>any</th>
-         *         <th>any</th>
+         *         <td>Blank</td>
+         *         <td>any</td>
+         *         <td>any</td>
          *         <td>error</td>
          *     </tr>
          *     <tr>
-         *         <td>value containing variables</th>
-         *         <th>any</th>
-         *         <th>any</th>
+         *         <td>value containing variables</td>
+         *         <td>any</td>
+         *         <td>any</td>
          *         <td>ok</td>
          *     </tr>
          *     <tr>
-         *         <td>existing job</th>
-         *         <th>false</th>
-         *         <th>any</th>
+         *         <td>existing job</td>
+         *         <td>false</td>
+         *         <td>any</td>
          *         <td>ok</td>
          *     </tr>
          *     <tr>
-         *         <td>existing job</th>
-         *         <th>true</th>
-         *         <th>any</th>
+         *         <td>existing job</td>
+         *         <td>true</td>
+         *         <td>any</td>
          *         <td>warning</td>
          *     </tr>
          *     <tr>
-         *         <td>non existing job</th>
-         *         <th>any</th>
-         *         <th>false</th>
+         *         <td>non existing job</td>
+         *         <td>any</td>
+         *         <td>false</td>
          *         <td>ok</td>
          *     </tr>
          *     <tr>
-         *         <td>non existing job</th>
-         *         <th>any</th>
-         *         <th>true</th>
+         *         <td>non existing job</td>
+         *         <td>any</td>
+         *         <td>true</td>
          *         <td>warning</td>
          *     </tr>
          * </table>
          * 
-         * @param jobName
-         * @param warnIfExists
-         * @param warnIfNotExists
-         * @return
+         * @param project the current job
+         * @param jobName the name of the job to check
+         * @param warnIfExists returns warning if the job exists
+         * @param warnIfNotExists returns warning if the job not exists
+         * @return validation result
          */
         public FormValidation doCheckJobName(AbstractProject<?,?> project, String jobName, boolean warnIfExists, boolean warnIfNotExists)
         {
@@ -628,8 +625,9 @@ public class JobcopyBuilder extends Builder implements Serializable
         /**
          * Validate "From Job Name" field.
          * 
-         * @param fromJobName
-         * @return
+         * @param project the current job
+         * @param fromJobName the input to "From Job Name"
+         * @return validation result
          */
         public FormValidation doCheckFromJobName(@AncestorInPath AbstractProject<?,?> project, @QueryParameter String fromJobName)
         {
@@ -639,9 +637,10 @@ public class JobcopyBuilder extends Builder implements Serializable
         /**
          * Validate "To Job Name" field.
          * 
-         * @param toJobName
-         * @param overwrite
-         * @return FormValidation object.
+         * @param project the current job
+         * @param toJobName the input to "To Job Name"
+         * @param overwrite the input to "Overwrite"
+         * @return validation result
          */
         public FormValidation doCheckToJobName(@AncestorInPath AbstractProject<?,?> project, @QueryParameter String toJobName, @QueryParameter boolean overwrite)
         {

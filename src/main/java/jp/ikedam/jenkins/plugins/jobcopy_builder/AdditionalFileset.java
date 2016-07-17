@@ -85,6 +85,7 @@ public class AdditionalFileset extends AbstractDescribableImpl<AdditionalFileset
      * If the copied-to file is already exists,
      * jobcopy build step works as following depending on this value.
      * <table>
+     *     <caption>How AdditionalFileset works with {@code isOverwrite}</caption>
      *     <tr>
      *         <th>isOverwrite</th>
      *         <th>behavior</th>
@@ -142,9 +143,10 @@ public class AdditionalFileset extends AbstractDescribableImpl<AdditionalFileset
     /**
      * Copy the additional files and apply additional operations.
      * 
-     * @param toJob
-     * @param fromJob
-     * @param logger
+     * @param toJob job to copy to
+     * @param fromJob job to copy from
+     * @param env environment variables
+     * @param logger console
      * @return whether the work succeeded.
      */
     public boolean perform(TopLevelItem toJob, TopLevelItem fromJob, EnvVars env, PrintStream logger)
@@ -190,10 +192,11 @@ public class AdditionalFileset extends AbstractDescribableImpl<AdditionalFileset
     /**
      * Process one file.
      * 
-     * @param dstFile
-     * @param srcFile
-     * @param logger
-     * @return
+     * @param dstFile file to copy to
+     * @param srcFile file to copy from
+     * @param env environment variables
+     * @param logger console
+     * @return true if succeeded to process and copy.
      */
     protected boolean performToFile(File dstFile, File srcFile, EnvVars env, PrintStream logger)
     {
@@ -292,7 +295,7 @@ public class AdditionalFileset extends AbstractDescribableImpl<AdditionalFileset
         /**
          * Validates the input to includeFile
          * 
-         * @param includeFile
+         * @param includeFile input to "Files"
          * 
          * @return FormValidation object
          */

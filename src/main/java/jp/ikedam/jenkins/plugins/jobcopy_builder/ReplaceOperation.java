@@ -74,8 +74,9 @@ public class ReplaceOperation extends AbstractXmlJobcopyOperation implements Ser
         /**
          * Validate the value input to "From String"
          * 
-         * @param fromStr
-         * @return FormValidation object.
+         * @param fromStr the input to "From String"
+         * @param expandFromStr the input to "Expand From String"
+         * @return validation result
          */
         public FormValidation doCheckFromStr(@QueryParameter String fromStr, @QueryParameter boolean expandFromStr)
         {
@@ -94,10 +95,11 @@ public class ReplaceOperation extends AbstractXmlJobcopyOperation implements Ser
         }
         
         /**
-         * Validate the value input to "From String"
+         * Validate the value input to "To String"
          * 
-         * @param fromStr
-         * @return FormValidation object.
+         * @param toStr the input to "To String"
+         * @param expandToStr the input to "Expand To String"
+         * @return validation result
          */
         public FormValidation doCheckToStr(@QueryParameter String toStr, @QueryParameter boolean expandToStr)
         {

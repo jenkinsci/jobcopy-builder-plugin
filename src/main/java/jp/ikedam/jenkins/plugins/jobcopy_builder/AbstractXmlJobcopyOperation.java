@@ -205,7 +205,7 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
      * @param doc       the XML Document object.
      * @param xpath     a XPath specifying the retrieving node.
      * @return          the retrieved node.
-     * @throws XPathExpressionException
+     * @throws XPathExpressionException problems in {@code xpath}
      */
     protected Node getNode(Document doc, String xpath)
         throws XPathExpressionException
@@ -226,7 +226,7 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
      * @param doc               the XML Document object.
      * @param xpathExpression   a XPath specifying the retrieving nodes.
      * @return                  retrieved nodes in NodeList
-     * @throws XPathExpressionException
+     * @throws XPathExpressionException problems in {@code xpathExpression}
      */
     protected NodeList getNodeList(Document doc, String xpathExpression)
         throws XPathExpressionException
