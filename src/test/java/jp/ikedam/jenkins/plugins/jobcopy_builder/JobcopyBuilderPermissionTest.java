@@ -521,8 +521,8 @@ public class JobcopyBuilderPermissionTest
         FreeStyleProject src = j.createFreeStyleProject();
         {
             Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet("user1"));
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet("user2"));    // not by user1!
+            auths.put(Item.READ, Sets.newHashSet("user2"));    // not by user1!
+            auths.put(Item.EXTENDED_READ, Sets.newHashSet("user1"));
             src.addProperty(new AuthorizationMatrixProperty(auths));
         }
         src.setAssignedLabel(Label.get("test"));
