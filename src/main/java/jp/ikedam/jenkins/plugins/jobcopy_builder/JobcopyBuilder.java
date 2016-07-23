@@ -37,6 +37,7 @@ import hudson.matrix.MatrixProject;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
 import hudson.model.TopLevelItem;
+import hudson.security.ACL;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractItem;
@@ -49,6 +50,8 @@ import hudson.tasks.BuildStepDescriptor;
 import jenkins.model.ModifiableTopLevelItemGroup;
 import jenkins.model.Jenkins;
 
+import org.acegisecurity.context.SecurityContext;
+import org.acegisecurity.context.SecurityContextHolder;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -60,7 +63,6 @@ import com.google.common.collect.Lists;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.Serializable;
 
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
@@ -71,10 +73,8 @@ import javax.xml.transform.stream.StreamSource;
  * You can specify additional operations that is performed when copying,
  * and the operations can be extended with plugins using Extension Points.
  */
-public class JobcopyBuilder extends Builder implements Serializable
+public class JobcopyBuilder extends Builder
 {
-    private static final long serialVersionUID = 1L;
-    
     private String fromJobName;
     
     /**
@@ -189,6 +189,28 @@ public class JobcopyBuilder extends Builder implements Serializable
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
         throws IOException, InterruptedException
     {
+        SecurityContext orig = null;
+        if(ACL.SYSTEM.equals(Jenkins.getAuthentication()))
+        {
+            orig = ACL.impersonate(Jenkins.ANONYMOUS);
+        }
+        
+        try
+        {
+            return performImpl(build, launcher, listener);
+        }
+        finally
+        {
+            if(orig != null)
+            {
+                SecurityContextHolder.setContext(orig);
+            }
+        }
+    }
+    
+    private boolean performImpl(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
+        throws IOException, InterruptedException
+    {
         ItemGroup<?> context = build.getProject().getRootProject().getParent();
         EnvVars env = build.getEnvironment(listener);
         
@@ -231,6 +253,13 @@ public class JobcopyBuilder extends Builder implements Serializable
         else if(!(fromJob instanceof AbstractItem))
         {
             listener.getLogger().println(String.format("Error: Item '%s' was found, but cannot be copied (does not support AbstractItem).", fromJob));
+            return false;
+        }
+        
+        // Requires EXTENDED_READ for reading the configuration file.
+        if(!fromJob.hasPermission(Item.EXTENDED_READ))
+        {
+            listener.getLogger().println(String.format("Error: Requires EXTENDED_READ or CONFIGURE permission for '%s'.", fromJobNameExpanded));
             return false;
         }
         
