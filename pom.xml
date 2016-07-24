@@ -8,7 +8,7 @@
 
   <groupId>jp.ikedam.jenkins.plugins</groupId>
   <artifactId>jobcopy-builder</artifactId>
-  <version>1.3.1-SNAPSHOT</version>
+  <version>1.4.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Jobcopy Builder plugin</name>
   <description>Jenkins plugin to copy a job in a build step.</description>
@@ -36,13 +36,19 @@
   </licenses>
   
   <properties>
-    <!-- ModifiableTopLevelItemGroup is since 1.480.3 -->
-    <jenkins.version>1.480.3</jenkins.version>
-    <jenkins-test-harness.version>1.480.3</jenkins-test-harness.version>
-    <java.level>5</java.level>
+    <!-- QueueItemAuthenticator is since 1.520 -->
+    <jenkins.version>1.532</jenkins.version>
+    <jenkins-test-harness.version>1.532</jenkins-test-harness.version>
+    <java.level>6</java.level>
   </properties>
   
   <dependencies>
+    <dependency>
+      <!-- The one depended by Jenkins 1.532 to avoid NoSuchMethodError of jenkins-test-harness -->
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.11</version>
+    </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>cloudbees-folder</artifactId>
@@ -61,6 +67,13 @@
       <artifactId>promoted-builds</artifactId>
       <version>2.8</version>
       <scope>test</scope>
+      <exclusions>
+        <!-- Use the one injected via jenkins-test-harness-1.532 -->
+        <exclusion>
+          <groupId>org.jenkins-ci.main</groupId>
+          <artifactId>maven-plugin</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
   
@@ -72,34 +85,6 @@
           <!-- jenkins-test-harness < 1.545 doesn't support concurrent tests. -->
           <forkCount>1</forkCount>
         </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>display-info</id>
-            <configuration>
-              <rules>
-                <bannedDependencies>
-                  <excludes>
-                    <!-- <exclude>org.sonatype.sisu:sisu-guice</exclude> -->
-                    <exclude>log4j:log4j:*:jar:compile</exclude>
-                    <exclude>log4j:log4j:*:jar:runtime</exclude>
-                    <exclude>commons-logging:commons-logging:*:jar:compile</exclude>
-                    <exclude>commons-logging:commons-logging:*:jar:runtime</exclude>
-                  </excludes>
-                </bannedDependencies>
-                <enforceBytecodeVersion>
-                  <excludes combine.children="append">
-                    <!-- dependencies via jenkins-core-1.480.3 -->
-                    <exclude>org.mindrot:jbcrypt</exclude>
-                    <exclude>org.kohsuke:asm3</exclude>
-                  </excludes>
-                </enforceBytecodeVersion>
-              </rules>
-          </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
