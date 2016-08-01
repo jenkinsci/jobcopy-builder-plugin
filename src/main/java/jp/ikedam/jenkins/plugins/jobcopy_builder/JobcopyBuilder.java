@@ -43,6 +43,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractItem;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
+import hudson.model.JobProperty;
 import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
 import hudson.tasks.Builder;
@@ -53,8 +54,6 @@ import jenkins.model.Jenkins;
 import org.acegisecurity.context.SecurityContext;
 import org.acegisecurity.context.SecurityContextHolder;
 import org.apache.commons.lang.StringUtils;
-import org.jenkinsci.plugins.authorizeproject.AuthorizeProjectProperty;
-import org.jenkinsci.plugins.authorizeproject.strategy.SystemAuthorizationStrategy;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -192,17 +191,11 @@ public class JobcopyBuilder extends Builder
         throws IOException, InterruptedException
     {
         SecurityContext orig = null;
-        if (ACL.SYSTEM.equals(Jenkins.getAuthentication())) {
-            boolean configuredAsSystem = false;
-            for (Object jobProperty : build.getProject().getAllProperties()) {
-                if (jobProperty instanceof AuthorizeProjectProperty) {
-                    if (((AuthorizeProjectProperty) jobProperty).getStrategy() instanceof SystemAuthorizationStrategy) {
-                        configuredAsSystem = true;
-                    }
-                }
-            }
+        if(ACL.SYSTEM.equals(Jenkins.getAuthentication()))
+        {
+            JobProperty systemAuthorizationStrategy = build.getProject().getProperty("SystemAuthorizationStrategy");
 
-            if (!configuredAsSystem) {
+            if (systemAuthorizationStrategy == null) {
                 orig = ACL.impersonate(Jenkins.ANONYMOUS);
             }
         }
