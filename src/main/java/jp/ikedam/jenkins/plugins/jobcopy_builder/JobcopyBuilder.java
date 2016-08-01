@@ -53,6 +53,8 @@ import jenkins.model.Jenkins;
 import org.acegisecurity.context.SecurityContext;
 import org.acegisecurity.context.SecurityContextHolder;
 import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.authorizeproject.AuthorizeProjectProperty;
+import org.jenkinsci.plugins.authorizeproject.strategy.SystemAuthorizationStrategy;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -190,9 +192,19 @@ public class JobcopyBuilder extends Builder
         throws IOException, InterruptedException
     {
         SecurityContext orig = null;
-        if(ACL.SYSTEM.equals(Jenkins.getAuthentication()))
-        {
-            orig = ACL.impersonate(Jenkins.ANONYMOUS);
+        if (ACL.SYSTEM.equals(Jenkins.getAuthentication())) {
+            boolean configuredAsSystem = false;
+            for (Object jobProperty : build.getProject().getAllProperties()) {
+                if (jobProperty instanceof AuthorizeProjectProperty) {
+                    if (((AuthorizeProjectProperty) jobProperty).getStrategy() instanceof SystemAuthorizationStrategy) {
+                        configuredAsSystem = true;
+                    }
+                }
+            }
+
+            if (!configuredAsSystem) {
+                orig = ACL.impersonate(Jenkins.ANONYMOUS);
+            }
         }
         
         try
