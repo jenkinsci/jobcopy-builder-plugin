@@ -53,6 +53,8 @@ import jenkins.model.Jenkins;
 import org.acegisecurity.context.SecurityContext;
 import org.acegisecurity.context.SecurityContextHolder;
 import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.authorizeproject.AuthorizeProjectProperty;
+import org.jenkinsci.plugins.authorizeproject.strategy.SystemAuthorizationStrategy;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -192,7 +194,24 @@ public class JobcopyBuilder extends Builder
         SecurityContext orig = null;
         if(ACL.SYSTEM.equals(Jenkins.getAuthentication()))
         {
-            orig = ACL.impersonate(Jenkins.ANONYMOUS);
+            boolean configuredAsSystem = false;
+
+            // If the Authorize Project plugin is installed, check if this project is configured to run as SYSTEM
+            if (Jenkins.getInstance().getPlugin("authorize-project") != null) {
+                try {
+                    AuthorizeProjectProperty systemAuthorizationStrategy = build.getProject().getProperty(AuthorizeProjectProperty.class);
+                    if (systemAuthorizationStrategy != null && systemAuthorizationStrategy.getStrategy() instanceof SystemAuthorizationStrategy) {
+                        configuredAsSystem = true;
+                    }
+                } catch (NoClassDefFoundError e) {
+                    // Must be installed without being enabled
+                    // https://wiki.jenkins-ci.org/display/JENKINS/Tips+for+optional+dependencies
+                }
+            }
+
+            if (!configuredAsSystem) {
+                orig = ACL.impersonate(Jenkins.ANONYMOUS);
+            }
         }
         
         try
