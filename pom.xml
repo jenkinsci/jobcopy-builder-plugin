@@ -77,6 +77,13 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <!-- JENKINS-18537 (fixed in Jenkins 1.557 or 1554.1 -->
+    <dependency>
+      <groupId>org.jvnet.hudson</groupId>
+      <artifactId>xstream</artifactId>
+      <version>1.4.7-jenkins-1</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   
   <build>
