@@ -61,7 +61,7 @@ import java.util.StringTokenizer;
 public class JobcopyBuilder extends Builder {
     private String fromJobName;
     private String toJobName;
-    private boolean overwrite = false;
+    private boolean overwrite;
     private List<JobcopyOperation> jobcopyOperationList;
     private List<AdditionalFileset> additionalFilesetList;
 
@@ -204,7 +204,7 @@ public class JobcopyBuilder extends Builder {
     }
 
     /**
-     * Retuns a list of sets of files to copy additional to JOBNAME/config.xml.
+     * Returns a list of sets of files to copy additional to JOBNAME/config.xml.
      *
      * @return the additionalFilesetList
      */
@@ -251,21 +251,21 @@ public class JobcopyBuilder extends Builder {
         String toJobNameExpanded = env.expand(getToJobName());
 
         if (StringUtils.isBlank(fromJobNameExpanded)) {
-            listener.getLogger().println("From Job Name got to a blank");
+            listener.getLogger().println("From Job Name is empty");
             return false;
         }
         if (StringUtils.isBlank(toJobNameExpanded)) {
-            listener.getLogger().println("To Job Name got to a blank");
+            listener.getLogger().println("To Job Name is empty");
             return false;
         }
 
-        listener.getLogger().println(String.format("Copying %s to %s", fromJobNameExpanded, toJobNameExpanded));
+        listener.getLogger().println(String.format("Copying '%s' to '%s'", fromJobNameExpanded, toJobNameExpanded));
 
-        // Reteive the job to be copied from.
+        // Retrieve the job to be copied from.
         TopLevelItem fromJob = getRelative(fromJobNameExpanded, context, TopLevelItem.class);
 
         if (fromJob == null) {
-            listener.getLogger().println(String.format("Error: Item '%s 'was not found.", fromJobNameExpanded));
+            listener.getLogger().println(String.format("Error: Item '%s' was not found. Check permissions for user.", fromJobNameExpanded));
             return false;
         } else if (!(fromJob instanceof AbstractItem)) {
             listener.getLogger().println(String.format("Error: Item '%s' was found, but cannot be copied (does not support AbstractItem).", fromJob));
@@ -281,7 +281,7 @@ public class JobcopyBuilder extends Builder {
         // Check whether the job to be copied to is already exists.
         TopLevelItem toJob = getRelative(toJobNameExpanded, context, TopLevelItem.class);
         if (toJob != null) {
-            listener.getLogger().println(String.format("Already exists: %s", toJobNameExpanded));
+            listener.getLogger().println(String.format("Already exists: '%s'", toJobNameExpanded));
             if (!isOverwrite()) {
                 return false;
             }
@@ -292,12 +292,12 @@ public class JobcopyBuilder extends Builder {
         }
 
         // Retrieve the config.xml of the job copied from.
-        listener.getLogger().println(String.format("Fetching configuration of %s...", fromJobNameExpanded));
+        listener.getLogger().println(String.format("Fetching configuration of '%s'...", fromJobNameExpanded));
 
         XmlFile file = ((AbstractItem) fromJob).getConfigFile();
         String jobConfigXmlString = file.asString();
         String encoding = file.sniffEncoding();
-        listener.getLogger().println("Original xml:");
+        listener.getLogger().println("Original XML: ");
         listener.getLogger().println(jobConfigXmlString);
 
         // Apply additional operations to the retrieved XML.
@@ -309,12 +309,12 @@ public class JobcopyBuilder extends Builder {
                 }
             }
         }
-        listener.getLogger().println("Copied xml:");
+        listener.getLogger().println("Copied XML: ");
         listener.getLogger().println(jobConfigXmlString);
 
         if (toJob == null) {
             // Create the job copied to.
-            listener.getLogger().println(String.format("Creating %s", toJobNameExpanded));
+            listener.getLogger().println(String.format("Creating '%s'", toJobNameExpanded));
             InputStream is = new ByteArrayInputStream(jobConfigXmlString.getBytes(encoding));
             ItemGroup<?> toContext = context;
             if (toJobNameExpanded.lastIndexOf('/') >= 0) {
@@ -336,11 +336,11 @@ public class JobcopyBuilder extends Builder {
 
             toJob = ((ModifiableTopLevelItemGroup) toContext).createProjectFromXML(toJobNameExpanded, is);
             if (toJob == null) {
-                listener.getLogger().println(String.format("Failed to create %s", toJobNameExpanded));
+                listener.getLogger().println(String.format("Failed to create '%s'", toJobNameExpanded));
                 return false;
             }
         } else {
-            listener.getLogger().println(String.format("Updating %s", toJobNameExpanded));
+            listener.getLogger().println(String.format("Updating '%s'", toJobNameExpanded));
             AbstractItem target = (AbstractItem) toJob;
             InputStream is = new ByteArrayInputStream(jobConfigXmlString.getBytes(encoding));
 
@@ -371,7 +371,7 @@ public class JobcopyBuilder extends Builder {
         boolean failed = false;
 
         if (getAdditionalFilesetList() != null && !getAdditionalFilesetList().isEmpty()) {
-            listener.getLogger().println("Copying Additional Files...");
+            listener.getLogger().println("Copying additional files...");
             for (AdditionalFileset fileset : getAdditionalFilesetList()) {
                 if (!fileset.perform(toJob, fromJob, env, listener.getLogger())) {
                     failed = true;

@@ -938,8 +938,6 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase {
         // I have no idea to achieve this...
     }
 
-    ;
-
     // Test the behavior with AdditionalFileset
     public void testPerformWithAdditionalFileset() throws IOException, InterruptedException, FormException, ExecutionException {
         FreeStyleProject fromJob = createFreeStyleProject("testPerformWithAdditionalFileset1");

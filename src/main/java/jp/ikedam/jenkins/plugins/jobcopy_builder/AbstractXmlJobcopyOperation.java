@@ -78,7 +78,7 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation {
         try {
             doc = getXmlDocumentFromString(xmlString, encoding, logger);
         } catch (Exception e) {
-            logger.print("Error occured in XML operation");
+            logger.print("Error occurred in XML operation");
             e.printStackTrace(logger);
             return null;
         }
@@ -92,7 +92,7 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation {
         try {
             return getXmlString(newDoc);
         } catch (Exception e) {
-            logger.print("Error occured in XML operation");
+            logger.print("Error occurred in XML operation");
             e.printStackTrace(logger);
             return null;
         }
@@ -165,7 +165,7 @@ public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation {
         );
     }
 
-    /****** Utility methods working with XML. Usable from subclasses. ******/
+    /* Utility methods working with XML. Usable from subclasses. */
 
     /**
      * Retrieve a XML node using XPath.

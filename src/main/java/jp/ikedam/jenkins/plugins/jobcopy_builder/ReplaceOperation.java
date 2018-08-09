@@ -130,14 +130,14 @@ public class ReplaceOperation extends AbstractXmlJobcopyOperation implements Ser
         String expandedFromStr = isExpandFromStr() ? env.expand(fromStr) : fromStr;
         String expandedToStr = isExpandToStr() ? env.expand(toStr) : toStr;
         if (StringUtils.isEmpty(expandedFromStr)) {
-            logger.println("From String got to be empty");
+            logger.println("From String is empty");
             return null;
         }
         if (expandedToStr == null) {
             expandedToStr = "";
         }
 
-        logger.print("Replacing: " + expandedFromStr + " -> " + expandedToStr);
+        logger.printf("Replacing: %s -> %s", expandedFromStr, expandedToStr);
         try {
             // Retrieve all text nodes.
             NodeList textNodeList = getNodeList(doc, "//text()");
@@ -152,7 +152,7 @@ public class ReplaceOperation extends AbstractXmlJobcopyOperation implements Ser
 
             return doc;
         } catch (Exception e) {
-            logger.print("Error occured in XML operation");
+            logger.print("Error occurred in XML operation");
             e.printStackTrace(logger);
             return null;
         }

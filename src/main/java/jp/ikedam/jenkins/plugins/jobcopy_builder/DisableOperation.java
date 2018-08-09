@@ -75,7 +75,7 @@ public class DisableOperation extends AbstractXmlJobcopyOperation implements Ser
 
             return doc;
         } catch (Exception e) {
-            logger.print("Error occured in XML operation");
+            logger.print("Error occurred in XML operation");
             e.printStackTrace(logger);
             return null;
         }

@@ -50,7 +50,7 @@ public abstract class JobcopyOperation extends AbstractDescribableImpl<JobcopyOp
      * @return a list of JobcopyOperation
      */
     static public DescriptorExtensionList<JobcopyOperation, Descriptor<JobcopyOperation>> all() {
-        return Jenkins.getInstance().<JobcopyOperation, Descriptor<JobcopyOperation>>getDescriptorList(JobcopyOperation.class);
+        return Jenkins.getInstance().getDescriptorList(JobcopyOperation.class);
     }
 
     /**
