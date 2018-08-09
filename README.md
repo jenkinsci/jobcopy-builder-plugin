@@ -18,14 +18,14 @@ This plugin provides Copy Job build step:
 		* Variable expressions can be used.
 	* To Job Name
 		* Variable expressions can be used.
-	* Overwite
+	* Overwrite
 		* Specifies whether to overwrite if the destination job already exists.
 * Additional operations will be performed when copying.
 	* Enable Job: Enabling the destination job if the source job is disabled.
 	* Disable Job: Disabling the destination job if the source job is enabled.
 	* Replace String: Replace strings in a job configuration.
 		* Source and destination strings can contain variable expressions.
-* Additional operation can be extended by using [the Jenkins extention point featere] (https://wiki.jenkins-ci.org/display/JENKINS/Extension+points).
+* Additional operation can be extended by using [the Jenkins extension point feature] (https://wiki.jenkins-ci.org/display/JENKINS/Extension+points).
 
 Limitations
 -----------
