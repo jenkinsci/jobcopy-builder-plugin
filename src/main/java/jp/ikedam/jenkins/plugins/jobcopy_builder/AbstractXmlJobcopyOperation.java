@@ -1,18 +1,18 @@
 /*
  * The MIT License
- * 
+ *
  * Copyright (c) 2012-2013 IKEDA Yasuyuki
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,14 +23,15 @@
  */
 package jp.ikedam.jenkins.plugins.jobcopy_builder;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import javax.annotation.CheckForNull;
 import javax.xml.parsers.DocumentBuilder;
@@ -42,230 +43,195 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Text;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
-
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import javax.xml.xpath.*;
+import java.io.*;
 
 /**
  * Abstract class for job copy operation using XML DOM.
+ *
  * @see jp.ikedam.jenkins.plugins.jobcopy_builder.JobcopyOperation
  */
-public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation
-{
+public abstract class AbstractXmlJobcopyOperation extends JobcopyOperation {
     /**
      * Performs modifications to job configure XML Document.
-     * 
-     * @param doc       XML Document of the job to be copied (job/NAME/config.xml)
-     * @param env       Variables defined in the build.
-     * @param logger    The output stream to log.
-     * @return          modified XML Document. Return null if an error occurs.
+     *
+     * @param doc    XML Document of the job to be copied (job/NAME/config.xml)
+     * @param env    Variables defined in the build.
+     * @param logger The output stream to log.
+     * @return modified XML Document. Return null if an error occurs.
      */
     public abstract Document perform(Document doc, EnvVars env, PrintStream logger);
-    
+
     /**
      * Returns modified XML string of the job configuration.
-     * 
+     *
      * @param xmlString the XML string  of the job to be copied (job/NAME/config.xml)
      * @param encoding  the encoding of the XML.
      * @param env       Variables defined in the build.
      * @param logger    The output stream to log.
-     * @return          modified XML string. Returns null if an error occurs.
+     * @return modified XML string. Returns null if an error occurs.
      * @see jp.ikedam.jenkins.plugins.jobcopy_builder.JobcopyOperation#perform(java.lang.String, java.lang.String, hudson.EnvVars, java.io.PrintStream)
      */
     @Override
-    public String perform(String xmlString, String encoding, EnvVars env, PrintStream logger)
-    {
+    public String perform(String xmlString, String encoding, EnvVars env, PrintStream logger) {
         Document doc;
-        try
-        {
+        try {
             doc = getXmlDocumentFromString(xmlString, encoding, logger);
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             logger.print("Error occured in XML operation");
             e.printStackTrace(logger);
             return null;
         }
-        
+
         Document newDoc = perform(doc, env, logger);
-        if(newDoc == null)
-        {
+        if (newDoc == null) {
             // It seems that an error occurred in XML processing.
             return null;
         }
-        
-        try
-        {
+
+        try {
             return getXmlString(newDoc);
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             logger.print("Error occured in XML operation");
             e.printStackTrace(logger);
             return null;
         }
     }
-    
+
     /**
      * Retrieve the XML string from XML Document object
-     * 
-     * @param doc   the XML Document object.
-     * @return      the XML string
+     *
+     * @param doc the XML Document object.
+     * @return the XML string
      * @throws TransformerException
      */
     private String getXmlString(Document doc)
-        throws TransformerException
-    {
-        TransformerFactory tfactory = TransformerFactory.newInstance(); 
-        Transformer transformer = tfactory.newTransformer(); 
+            throws TransformerException {
+        TransformerFactory tfactory = TransformerFactory.newInstance();
+        Transformer transformer = tfactory.newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-        
+
         StringWriter sw = new StringWriter();
-        transformer.transform(new DOMSource(doc), new StreamResult(sw)); 
-        
+        transformer.transform(new DOMSource(doc), new StreamResult(sw));
+
         return sw.toString();
     }
-    
+
     /**
      * Construct a XML Document object from a XML string.
-     * 
-     * @param xmlString     a XML string.
-     * @param encoding      encoding of xmlString.
-     * @return              Constructed XML Document object.
+     *
+     * @param xmlString a XML string.
+     * @param encoding  encoding of xmlString.
+     * @return Constructed XML Document object.
      * @throws ParserConfigurationException
      * @throws UnsupportedEncodingException
      * @throws SAXException
      * @throws IOException
      */
     private Document getXmlDocumentFromString(String xmlString, String encoding, final PrintStream logger)
-        throws ParserConfigurationException,UnsupportedEncodingException,SAXException,IOException
-    {
+            throws ParserConfigurationException, UnsupportedEncodingException, SAXException, IOException {
         DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance();
         //domFactory.setNamespaceAware(true);
         DocumentBuilder builder = domFactory.newDocumentBuilder();
-        builder.setErrorHandler(new ErrorHandler(){
+        builder.setErrorHandler(new ErrorHandler() {
             @Override
             public void warning(SAXParseException exception)
-                    throws SAXException
-            {
+                    throws SAXException {
                 exception.printStackTrace(logger);
             }
-            
+
             @Override
-            public void error(SAXParseException exception) throws SAXException
-            {
+            public void error(SAXParseException exception) throws SAXException {
                 exception.printStackTrace(logger);
             }
-            
+
             @Override
             public void fatalError(SAXParseException exception)
-                    throws SAXException
-            {
+                    throws SAXException {
                 exception.printStackTrace(logger);
             }
         });
         InputStream is = createInputStreamFromString(xmlString, encoding);
-        
+
         return builder.parse(is);
     }
-    
+
     @SuppressFBWarnings("DM_DEFAULT_ENCODING")
     private InputStream createInputStreamFromString(String str, @CheckForNull String encoding)
-            throws UnsupportedEncodingException
-    {
-        return new ByteArrayInputStream((encoding != null)?
-            str.getBytes(encoding)
-            :str.getBytes()
-        ); 
+            throws UnsupportedEncodingException {
+        return new ByteArrayInputStream((encoding != null) ?
+                str.getBytes(encoding)
+                : str.getBytes()
+        );
     }
-    
+
     /****** Utility methods working with XML. Usable from subclasses. ******/
-    
+
     /**
      * Retrieve a XML node using XPath.
-     * 
+     * <p>
      * Returns null in following cases:
      * <ul>
-     *      <li>No node found.</li>
-     *      <li>More than one node found.</li>
+     * <li>No node found.</li>
+     * <li>More than one node found.</li>
      * </ul>
-     * 
-     * @param doc       the XML Document object.
-     * @param xpath     a XPath specifying the retrieving node.
-     * @return          the retrieved node.
+     *
+     * @param doc   the XML Document object.
+     * @param xpath a XPath specifying the retrieving node.
+     * @return the retrieved node.
      * @throws XPathExpressionException problems in {@code xpath}
      */
     protected Node getNode(Document doc, String xpath)
-        throws XPathExpressionException
-    {
+            throws XPathExpressionException {
         NodeList nodeList = getNodeList(doc, xpath);
-        
-        if(nodeList.getLength() != 1)
-        {
+
+        if (nodeList.getLength() != 1) {
             return null;
         }
-        
+
         return nodeList.item(0);
     }
 
     /**
      * Retrieve a XML node list using XPath.
-     * 
-     * @param doc               the XML Document object.
-     * @param xpathExpression   a XPath specifying the retrieving nodes.
-     * @return                  retrieved nodes in NodeList
+     *
+     * @param doc             the XML Document object.
+     * @param xpathExpression a XPath specifying the retrieving nodes.
+     * @return retrieved nodes in NodeList
      * @throws XPathExpressionException problems in {@code xpathExpression}
      */
     protected NodeList getNodeList(Document doc, String xpathExpression)
-        throws XPathExpressionException
-    {
+            throws XPathExpressionException {
         XPathFactory factory = XPathFactory.newInstance();
         XPath xpath = factory.newXPath();
         XPathExpression expr = xpath.compile(xpathExpression);
-        
-        return (NodeList)expr.evaluate(doc, XPathConstants.NODESET);
+
+        return (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
     }
-    
+
     /**
      * Retrieve a XPath expression of a node.
-     * 
+     * <p>
      * Use only for displaying purposes only.
-     * For this works not so strict, 
+     * For this works not so strict,
      * the return value supposes not to work proper
      * with XPath processors.
-     * 
-     * @param targetNode  a node whose XPath expression is retrieved.
-     * @return            XPath expression.
+     *
+     * @param targetNode a node whose XPath expression is retrieved.
+     * @return XPath expression.
      */
-    protected String getXpath(Node targetNode)
-    {
+    protected String getXpath(Node targetNode) {
         StringBuilder pathBuilder = new StringBuilder();
-        for(Node node = targetNode; node != null && !(node instanceof Document); node = node.getParentNode())
-        {
-            if(node instanceof Text)
-            {
+        for (Node node = targetNode; node != null && !(node instanceof Document); node = node.getParentNode()) {
+            if (node instanceof Text) {
                 pathBuilder.insert(0, "text()");
                 pathBuilder.insert(0, '/');
-            }
-            else
-            {
+            } else {
                 pathBuilder.insert(0, node.getNodeName());
                 pathBuilder.insert(0, '/');
             }
         }
         return pathBuilder.toString();
     }
-    
+
 }
