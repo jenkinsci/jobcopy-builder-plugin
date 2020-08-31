@@ -247,7 +247,7 @@ public class JobcopyBuilder extends Builder
         
         if(fromJob == null)
         {
-            listener.getLogger().println(String.format("Error: Item '%s 'was not found.", fromJobNameExpanded));
+            listener.getLogger().println(String.format("Error: Item '%s' was not found.", fromJobNameExpanded));
             return false;
         }
         else if(!(fromJob instanceof AbstractItem))
