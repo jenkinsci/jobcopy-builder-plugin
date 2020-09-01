@@ -192,6 +192,7 @@ public class JobcopyBuilder extends Builder
         SecurityContext orig = null;
         if(ACL.SYSTEM.equals(Jenkins.getAuthentication()))
         {
+            listener.getLogger().println(Messages.JobCopyBuilder_downgradeToAnonymous());
             orig = ACL.impersonate(Jenkins.ANONYMOUS);
         }
         
@@ -247,7 +248,10 @@ public class JobcopyBuilder extends Builder
         
         if(fromJob == null)
         {
-            listener.getLogger().println(String.format("Error: Item '%s' was not found.", fromJobNameExpanded));
+            listener.getLogger().println(Messages.JobCopyBuilder_fromJobNotFound(fromJobNameExpanded));
+            listener.getLogger().println(Messages.JobCopyBuilder_fromJobNotFoundNote(
+                    Jenkins.getAuthentication().getName()
+            ));
             return false;
         }
         else if(!(fromJob instanceof AbstractItem))
