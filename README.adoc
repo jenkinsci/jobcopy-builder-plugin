@@ -7,7 +7,7 @@ retrieve choices, including the way to share choices among all jobs.
 
 :toc:
 
-[[JobcopyBuilderplugin-What'sthis?]]
+[[JobcopyBuilderplugin-Whatsthis]]
 == What's this?
 
 This plugin provides a Copy Job build step:
@@ -53,7 +53,7 @@ Git plugin is replaced.
 * The job copied to. String "VERSION" is replaced. +
 #image:docs/images/05-copyto02.png[image]#
 
-[[JobcopyBuilderplugin-Howdoesthiswork?]]
+[[JobcopyBuilderplugin-Howdoesthiswork]]
 == How does this work?
 
 This plugin works as following:
