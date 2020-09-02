@@ -13,7 +13,7 @@
   <name>Jobcopy Builder plugin</name>
   <description>Jenkins plugin to copy a job in a build step.</description>
 
-  <url>http://wiki.jenkins-ci.org/display/JENKINS/Jobcopy+Builder+plugin</url>
+  <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
   
   <scm>
     <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>

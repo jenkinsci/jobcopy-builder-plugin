@@ -1,8 +1,8 @@
-[[JobcopyBuilderplugin-ChangeLog]]
 == Change Log
 
-[[JobcopyBuilderplugin-Version1.4.0(Jul24,2016)]]
-=== Version 1.4.0 (Jul 24, 2016)
+=== 1.4.0
+
+Release date: Jul 24, 2016
 
 * Targets Jenkins 1.532. (was 1.480.3 till 1.3.0)
 * Improved permission checks
@@ -15,14 +15,16 @@ configurations.
 https://wiki.jenkins.io/display/JENKINS/Jobcopy+Builder+plugin#JobcopyBuilderplugin-Permissionstocopyjobs[#Permissions
 to copy jobs] for details.
 
-[[JobcopyBuilderplugin-Version1.3.0(May24,2015)]]
-=== Version 1.3.0 (May 24, 2015)
+=== 1.3.0
+
+Release date: May 24, 2015
 
 * Added "Disable Job" operation
 (https://issues.jenkins-ci.org/browse/JENKINS-28439[JENKINS-28439])
 
-[[JobcopyBuilderplugin-Version1.2.0(Sep11,2014)]]
-=== Version 1.2.0 (Sep 11, 2014)
+=== 1.2.0
+
+Release date: Sep 11, 2014)
 
 * Changed target Jenkins version from 1.466 to 1.480.3.
 * Supports
@@ -32,21 +34,24 @@ Folders Plugin]
 ** You can copy a job in a folder into another folder.
 ** You can copy folders.
 
-[[JobcopyBuilderplugin-Version1.1.2(Dec22,2013)]]
-=== Version 1.1.2 (Dec 22, 2013)
+=== 1.1.2
+
+Release date: Dec 22, 2013)
 
 * FIXED: Build results page shows wrong link for Copied To and Copied
 From (https://issues.jenkins-ci.org/browse/JENKINS-21080[JENKINS-21080])
 
-[[JobcopyBuilderplugin-Version1.1.1(Aug31,2013)]]
-=== Version 1.1.1 (Aug 31, 2013)
+=== 1.1.1
+
+Release date: Aug 31, 2013
 
 * Fixed a problem with overwriting multi-configuration projects.
 ** combination filter was not removed even when it is removed in the
 source project.
 
-[[JobcopyBuilderplugin-Version1.1.0(Feb27,2013)]]
-=== Version 1.1.0 (Feb 27, 2013)
+=== 1.1.0
+
+Release date: Feb 27, 2013
 
 * Added advanced configuration to copy additional files.
 ** Useful for plugins that does not store configurations in config.xml
@@ -55,8 +60,9 @@ of the job.
 https://wiki.jenkins.io/display/JENKINS/Promoted+Builds+Plugin[Promoted
 Builds Plugin].
 
-[[JobcopyBuilderplugin-Version1.0.1(Feb06,2013)]]
-=== Version 1.0.1 (Feb 06, 2013)
+=== 1.0.1
+
+Release date: Feb 06, 2013
 
 * Improved overwrite behavior
 ** Version 1.0.0: delete the old job, and create a new job. Also builds
@@ -65,7 +71,8 @@ are deleted.
 preserved.
 * expand "From Job Name" field
 
-[[JobcopyBuilderplugin-Version1.0.0(Jan14,2013)]]
-=== Version 1.0.0 (Jan 14, 2013)
+=== 1.0.0
+
+Release date: Jan 14, 2013
 
 * Initial release.
