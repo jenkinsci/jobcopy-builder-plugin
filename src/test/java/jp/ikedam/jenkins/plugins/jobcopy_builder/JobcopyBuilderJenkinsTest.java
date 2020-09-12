@@ -55,6 +55,7 @@ import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
 
 import org.jvnet.hudson.test.HudsonTestCase;
+import org.jvnet.hudson.test.Issue;
 import org.xml.sax.SAXException;
 
 import com.cloudbees.hudson.plugins.folder.Folder;
@@ -1578,5 +1579,49 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             assertNotNull(p);
             assertEquals(combinationFilter, p.getCombinationFilter());
         }
+    }
+    
+    @Issue("JENKINS-37875")
+    public void testAbsoluteToplevelToJobname() throws Exception
+    {
+        Folder folder = jenkins.createProject(Folder.class, "folder");
+        createFreeStyleProject("src");
+        
+        FreeStyleProject copyJob = folder.createProject(FreeStyleProject.class, "copier");
+        copyJob.getBuildersList().add(
+                new JobcopyBuilder(
+                        "/src",
+                        "/dest",
+                        true,
+                        Collections.<JobcopyOperation>emptyList(),
+                        Collections.<AdditionalFileset>emptyList()
+                )
+        );
+        assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+        assertNull(jenkins.getItemByFullName("/folder/dest"));
+        assertNotNull(jenkins.getItemByFullName("/dest"));
+        assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+    }
+    
+    @Issue("JENKINS-37875")
+    public void testAbsoluteSubToJobname() throws Exception
+    {
+        Folder folder = jenkins.createProject(Folder.class, "folder");
+        Folder subfolder = folder.createProject(Folder.class, "subfolder");
+        createFreeStyleProject("src");
+        
+        FreeStyleProject copyJob = subfolder.createProject(FreeStyleProject.class, "copier");
+        copyJob.getBuildersList().add(
+                new JobcopyBuilder(
+                        "/src",
+                        "/folder/dest",
+                        true,
+                        Collections.<JobcopyOperation>emptyList(),
+                        Collections.<AdditionalFileset>emptyList()
+                )
+        );
+        assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+        assertNotNull(jenkins.getItemByFullName("/folder/dest"));
+        assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
     }
 }

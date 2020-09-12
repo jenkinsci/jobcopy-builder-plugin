@@ -312,8 +312,14 @@ public class JobcopyBuilder extends Builder
                 int pos = toJobNameExpanded.lastIndexOf('/');
                 String parentName = toJobNameExpanded.substring(0, pos);
                 toJobNameExpanded = toJobNameExpanded.substring(pos + 1);
-                
-                toContext = getRelative(parentName, context, ItemGroup.class);
+                if ("".equals(parentName))
+                {
+                    toContext = Jenkins.getInstance();
+                }
+                else
+                {
+                    toContext = getRelative(parentName, context, ItemGroup.class);
+                }
                 if(toContext == null)
                 {
                     listener.getLogger().println(String.format("Error: Target folder '%s' was not found.", parentName));
