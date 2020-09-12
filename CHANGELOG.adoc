@@ -1,5 +1,14 @@
 == Change Log
 
+=== 1.4.1
+
+Release date: Sep 12, 2020
+
+* Delete an extra space letter in the error message. (https://github.com/jenkinsci/jobcopy-builder-plugin/pull/13[#13])
+* FIXED: Absolute top level job name in "Copy To" doesn't work as expected. (https://issues.jenkins-ci.org/browse/JENKINS-37875[JENKINS-37875])
+* Improve permission related messages. (https://issues.jenkins-ci.org/browse/JENKINS-39023[JENKINS-39023])
+* Move documentations to Github. (https://github.com/jenkinsci/jobcopy-builder-plugin/pull/17[#17])
+
 === 1.4.0
 
 Release date: Jul 24, 2016
