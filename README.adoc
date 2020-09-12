@@ -1,0 +1,139 @@
+= Jobcopy Builder plugin
+
+:sectanchors:
+
+This plugin adds "Copy Job" as a build step.You can select how to
+retrieve choices, including the way to share choices among all jobs.
+
+:toc:
+
+[[JobcopyBuilderplugin-Whatsthis]]
+== What's this?
+
+This plugin provides a Copy Job build step:
+
+* It makes a new job from an existing job.
+** You can copy multiple jobs in one build execution with specifying
+multiple Copy Job build steps.
+** Can be applied to any type of jobs.
+* You specify following parameters.
+** From Job Name
+*** Variable expressions can be used.
+** To Job Name
+*** Variable expressions can be used.
+** Overwrite
+*** Specifies whether to overwrite the destination job if it already
+exists.
+* Additional operations can be performed when copying.
+** Enable Job: Enabling the destination job if the source job is
+disabled.
+** Disable Job: Disabling the destination job if the source job is
+enabled. ( >= 1.3.0)
+** Replace String: Replace strings in a job configuration.
+*** Source and destination strings can contain variable expressions.
+* Additional operation can be extended by using Extension Points.
+
+[[JobcopyBuilderplugin-Screenshots]]
+== Screenshots
+
+. You can add "Copy Job" build step. +
+#image:docs/images/01-configure.png[image]#
+. "Copy Job" performs additional operations. Replacing strings in the
+configuration, enabling a disabled job.
+* The job copied from +
+#image:docs/images/02-copyfrom01.png[image]#
+* The job copied to. String "VERSION" is replaced, and the job is
+enabled. +
+#image:docs/images/03-copyto01.png[image]#
+. Replacing strings can be applied to any part of configurations,
+including that of plugins. This is a example that the branch field of
+Git plugin is replaced.
+* The job copied from. +
+#image:docs/images/04-copyfrom02.png[image]#
+* The job copied to. String "VERSION" is replaced. +
+#image:docs/images/05-copyto02.png[image]#
+
+[[JobcopyBuilderplugin-Howdoesthiswork]]
+== How does this work?
+
+This plugin works as following:
+
+. Reads the configuration xml (config.xml) of the copying job.
+. Applies the operations to the configuration xml string.
+. Create a new job with the processed configuration xml string.
+
+[[JobcopyBuilderplugin-Extensionpoint]]
+== Extension point
+
+A new way to provide choices can be added with implementing
+`+JobcopyOperation+`, overriding the following method:
+
+[source,java]
+----
+public String perform(String xmlString, String encoding, EnvVars env, PrintStream logger);
+----
+
+or, with extending `+AbstractXmlJobcopyOperation+`, overriding the
+following method:
+
+[source,java]
+----
+abstract public Document perform(Document doc, EnvVars env, PrintStream logger);
+----
+
+[[JobcopyBuilderplugin-Usedwithpromotedbuilds]]
+== Used with promoted builds
+
+When used with
+https://plugins.jenkins.io/promoted-builds/[Promoted
+Builds Plugin], the configurations of promotions are not copied for they
+are not stored in config.xml. +
+Do as followings:
+
+* Click "Advanced" in "copy Job"
+* Add "Additional File Sets", specify "promotions/*/config.xml" in
+"Files".
+
+[[JobcopyBuilderplugin-Permissionstocopyjobs]]
+== Permissions to copy jobs
+
+* "Copy Job" build step requires following permissions.
++
+[cols=",,",options="header",]
+|===
+|Target Job |Required permissions |Notes
+|Item to copy from |Job/Read, Job/ExtendedRead |Job/ExtendedRead is
+displayed only when you install
+https://plugins.jenkins.io/extended-read-permission/[Extended
+Read Permission Plugin]. You can grant it by granting Job/Configure
+instead.
+
+|Item to copy to (when create) |Job/Create | 
+
+|Item to copy to (when overwrite) |Job/Read, Job/Configure | 
+|===
+* "Copy Job" defaults to run as ANONYMOUS.
+** If you want "Copy Job" run as a specific user, use other plugins
+authenticate builds. e.g.
+https://plugins.jenkins.io/authorize-project/[Authorize
+Project plugin]
+
+[[JobcopyBuilderplugin-Issues]]
+== Issues
+
+To report a bug or request an enhancement to this plugin please create a
+ticket in JIRA (you need to login or to sign up for an account). Also
+have a look on
+https://www.jenkins.io/participate/report-issue/[How to
+report an issue]
+
+* https://issues.jenkins-ci.org/issues/?jql=resolution%20%3D%20Unresolved%20AND%20component%20%3D%20jobcopy-builder-plugin[Open
+Issues]
+* https://issues.jenkins-ci.org/secure/CreateIssueDetails!init.jspa?pid=10172&issuetype=1&components=17506&priority=4&assignee=ikedam[Bug
+report]
+* https://issues.jenkins-ci.org/secure/CreateIssueDetails!init.jspa?pid=10172&issuetype=4&components=17506&priority=4[Request
+or propose an improvement of existing feature]
+* https://issues.jenkins-ci.org/secure/CreateIssueDetails!init.jspa?pid=10172&issuetype=2&components=17506&priority=4[Request
+or propose a new feature]
+
+include::CHANGELOG.adoc[]

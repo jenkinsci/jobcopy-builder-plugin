@@ -1,0 +1,78 @@
+== Change Log
+
+=== 1.4.0
+
+Release date: Jul 24, 2016
+
+* Targets Jenkins 1.532. (was 1.480.3 till 1.3.0)
+* Improved permission checks
+(https://issues.jenkins-ci.org/browse/JENKINS-36672[JENKINS-36672])
+** Jobcopy build step is authorized as anonymous when the build is run
+as SYSTEM (that is, if not authorization for the job is not configured)
+** Requires EXTENTED_READ (or CONFIGURE) permission to read job
+configurations.
+** See
+https://wiki.jenkins.io/display/JENKINS/Jobcopy+Builder+plugin#JobcopyBuilderplugin-Permissionstocopyjobs[#Permissions
+to copy jobs] for details.
+
+=== 1.3.0
+
+Release date: May 24, 2015
+
+* Added "Disable Job" operation
+(https://issues.jenkins-ci.org/browse/JENKINS-28439[JENKINS-28439])
+
+=== 1.2.0
+
+Release date: Sep 11, 2014)
+
+* Changed target Jenkins version from 1.466 to 1.480.3.
+* Supports
+https://wiki.jenkins.io/display/JENKINS/CloudBees+Folders+Plugin[CloudBees
+Folders Plugin]
+(https://issues.jenkins-ci.org/browse/JENKINS-24515[JENKINS-24515])
+** You can copy a job in a folder into another folder.
+** You can copy folders.
+
+=== 1.1.2
+
+Release date: Dec 22, 2013)
+
+* FIXED: Build results page shows wrong link for Copied To and Copied
+From (https://issues.jenkins-ci.org/browse/JENKINS-21080[JENKINS-21080])
+
+=== 1.1.1
+
+Release date: Aug 31, 2013
+
+* Fixed a problem with overwriting multi-configuration projects.
+** combination filter was not removed even when it is removed in the
+source project.
+
+=== 1.1.0
+
+Release date: Feb 27, 2013
+
+* Added advanced configuration to copy additional files.
+** Useful for plugins that does not store configurations in config.xml
+of the job.
+** For example, you can copy configurations of
+https://wiki.jenkins.io/display/JENKINS/Promoted+Builds+Plugin[Promoted
+Builds Plugin].
+
+=== 1.0.1
+
+Release date: Feb 06, 2013
+
+* Improved overwrite behavior
+** Version 1.0.0: delete the old job, and create a new job. Also builds
+are deleted.
+** Version 1.0.1 and later: update the configuration. Builds are
+preserved.
+* expand "From Job Name" field
+
+=== 1.0.0
+
+Release date: Jan 14, 2013
+
+* Initial release.
