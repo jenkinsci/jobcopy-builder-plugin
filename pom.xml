@@ -8,7 +8,7 @@
 
   <groupId>jp.ikedam.jenkins.plugins</groupId>
   <artifactId>jobcopy-builder</artifactId>
-  <version>1.4.2</version>
+  <version>1.4.3-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Jobcopy Builder plugin</name>
   <description>Jenkins plugin to copy a job in a build step.</description>
@@ -19,7 +19,7 @@
     <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-    <tag>jobcopy-builder-1.4.2</tag>
+    <tag>HEAD</tag>
   </scm>
   
   <developers>
