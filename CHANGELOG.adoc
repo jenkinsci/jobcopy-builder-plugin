@@ -1,5 +1,11 @@
 == Change Log
 
+=== 1.4.2
+
+Release date: Jan 23, 2021
+
+* Remove unnecessary dependencies from the plugin (https://issues.jenkins.io/browse/JENKINS-64160[JENKINS-64160]).
+
 === 1.4.1
 
 Release date: Sep 12, 2020
