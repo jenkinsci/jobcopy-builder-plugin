@@ -38,6 +38,7 @@ import hudson.util.NullStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,9 +56,7 @@ public class AdditionalFilesetSimpleTest extends TestCase
 {
     private File createTempDir() throws IOException
     {
-        File tempFile = File.createTempFile("test", null);
-        tempFile.delete();
-        tempFile.mkdir();
+        File tempFile = Files.createTempDirectory("test").toFile();
         
         return tempFile;
     }
