@@ -54,23 +54,35 @@ import hudson.plugins.promoted_builds.conditions.ManualCondition;
 import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
 
-import org.jvnet.hudson.test.HudsonTestCase;
+import org.junit.Rule;
+import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
+import org.jvnet.hudson.test.JenkinsRule;
 import org.xml.sax.SAXException;
 
 import com.cloudbees.hudson.plugins.folder.Folder;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for JobcopyBuilder, corresponded to Jenkins.
  *
  */
-public class JobcopyBuilderJenkinsTest extends HudsonTestCase
+public class JobcopyBuilderJenkinsTest
 {
+    @Rule
+    public JenkinsRule j = new JenkinsRule();
+
     private JobcopyBuilder.DescriptorImpl getDescriptor()
     {
         return (JobcopyBuilder.DescriptorImpl)(new JobcopyBuilder(null, null, false, null, null)).getDescriptor();
     }
-    
+
+    @Test
     public void testDescriptorDoFillFromJobNameItems() throws IOException
     {
         JobcopyBuilder.DescriptorImpl descriptor = getDescriptor();
@@ -78,7 +90,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         // Job will be added after new job created.
         ComboBoxModel beforeList = descriptor.doFillFromJobNameItems(null);
         
-        FreeStyleProject project = createFreeStyleProject("testDescriptorDoFillFromJobNameItems1");
+        FreeStyleProject project = j.createFreeStyleProject("testDescriptorDoFillFromJobNameItems1");
         String newJobname = project.getName();
         
         ComboBoxModel afterList = descriptor.doFillFromJobNameItems(null);
@@ -87,6 +99,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         assertTrue("new job created", afterList.contains(newJobname));
     }
     
+    @Test
     public void testDescriptorDoFillFromJobNameItemsWithFolder() throws IOException
     {
         JobcopyBuilder.DescriptorImpl descriptor = getDescriptor();
@@ -94,8 +107,8 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         // job1
         // folder1/job2
         // folder1/folder2/job3
-        FreeStyleProject job1 = createFreeStyleProject("job1");
-        Folder folder1 = jenkins.createProject(Folder.class, "folder1");
+        FreeStyleProject job1 = j.createFreeStyleProject("job1");
+        Folder folder1 = j.jenkins.createProject(Folder.class, "folder1");
         FreeStyleProject job2 = folder1.createProject(FreeStyleProject.class, "job2");
         Folder folder2 = folder1.createProject(Folder.class, "folder2");
         FreeStyleProject job3 = folder2.createProject(FreeStyleProject.class, "job3");
@@ -113,10 +126,11 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         );
     }
     
+    @Test
     public void testDescriptorDoCheckFromJobName() throws IOException
     {
         JobcopyBuilder.DescriptorImpl descriptor = getDescriptor();
-        FreeStyleProject project = createFreeStyleProject("testDescriptorDoCheckFromJobName1");
+        FreeStyleProject project = j.createFreeStyleProject("testDescriptorDoCheckFromJobName1");
         String existJobname = project.getName();
         
         // exist job
@@ -193,6 +207,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         }
     }
     
+    @Test
     public void testDescriptorDoCheckFromJobNameWithFolder() throws IOException
     {
         JobcopyBuilder.DescriptorImpl descriptor = getDescriptor();
@@ -200,8 +215,8 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         // job1
         // folder1/job2
         // folder1/folder2/job3
-        FreeStyleProject job1 = createFreeStyleProject("job1");
-        Folder folder1 = jenkins.createProject(Folder.class, "folder1");
+        FreeStyleProject job1 = j.createFreeStyleProject("job1");
+        Folder folder1 = j.jenkins.createProject(Folder.class, "folder1");
         FreeStyleProject job2 = folder1.createProject(FreeStyleProject.class, "job2");
         Folder folder2 = folder1.createProject(Folder.class, "folder2");
         @SuppressWarnings("unused")
@@ -268,10 +283,11 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         );
     }
     
+    @Test
     public void testDescriptorDoCheckToJobName() throws IOException
     {
         JobcopyBuilder.DescriptorImpl descriptor = getDescriptor();
-        FreeStyleProject project = createFreeStyleProject("testDescriptorDoCheckToJobName1");
+        FreeStyleProject project = j.createFreeStyleProject("testDescriptorDoCheckToJobName1");
         String existJobname = project.getName();
         
         // exist job, overwrite
@@ -356,14 +372,15 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         }
     }
     
+    @Test
     public void testDescriptorDoCheckToJobNameWithFolder() throws IOException
     {
         JobcopyBuilder.DescriptorImpl descriptor = getDescriptor();
         // job1
         // folder1/job2
         // folder1/folder2/job3
-        FreeStyleProject job1 = createFreeStyleProject("job1");
-        Folder folder1 = jenkins.createProject(Folder.class, "folder1");
+        FreeStyleProject job1 = j.createFreeStyleProject("job1");
+        Folder folder1 = j.jenkins.createProject(Folder.class, "folder1");
         FreeStyleProject job2 = folder1.createProject(FreeStyleProject.class, "job2");
         Folder folder2 = folder1.createProject(Folder.class, "folder2");
         @SuppressWarnings("unused")
@@ -498,9 +515,10 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
      * @throws InterruptedException 
      * @throws ExecutionException 
      */
+    @Test
     public void testPerform() throws IOException, InterruptedException, ExecutionException
     {
-        FreeStyleProject fromJob = createFreeStyleProject("testPerform1");
+        FreeStyleProject fromJob = j.createFreeStyleProject("testPerform1");
         
         String toJobName = "JobCopiedTo";
         FreeStyleProject toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
@@ -537,7 +555,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             ));
             JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, lst, null);
             
-            FreeStyleProject project = createFreeStyleProject("testPerform2");
+            FreeStyleProject project = j.createFreeStyleProject("testPerform2");
             project.getBuildersList().add(target);
             
             FreeStyleBuild b = project.scheduleBuild2(
@@ -573,7 +591,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             ));
             JobcopyBuilder target = new JobcopyBuilder("${fromJobName}", "${toJobName}", false, lst, null);
             
-            FreeStyleProject project = createFreeStyleProject("testPerform3");
+            FreeStyleProject project = j.createFreeStyleProject("testPerform3");
             project.getBuildersList().add(target);
             
             FreeStyleBuild b = project.scheduleBuild2(
@@ -607,7 +625,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                 lst.add(new EnableOperation());
                 JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, lst, null);
                 
-                FreeStyleProject project = createFreeStyleProject("testPerform4");
+                FreeStyleProject project = j.createFreeStyleProject("testPerform4");
                 project.getBuildersList().add(target);
                 
                 FreeStyleBuild b = project.scheduleBuild2(
@@ -650,7 +668,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                 ));
                 JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, true, lst, null);
                 
-                FreeStyleProject project = createFreeStyleProject("testPerform5");
+                FreeStyleProject project = j.createFreeStyleProject("testPerform5");
                 project.getBuildersList().add(target);
                 
                 FreeStyleBuild b = project.scheduleBuild2(
@@ -683,7 +701,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         {
             JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, null, null);
             
-            FreeStyleProject project = createFreeStyleProject("testPerform6");
+            FreeStyleProject project = j.createFreeStyleProject("testPerform6");
             project.getBuildersList().add(target);
             
             FreeStyleBuild b = project.scheduleBuild2(
@@ -707,7 +725,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         {
             JobcopyBuilder target = new JobcopyBuilder(fromJob.getName(), toJobName, false, new ArrayList<JobcopyOperation>(0), null);
             
-            FreeStyleProject project = createFreeStyleProject("testPerform7");
+            FreeStyleProject project = j.createFreeStyleProject("testPerform7");
             project.getBuildersList().add(target);
             
             FreeStyleBuild b = project.scheduleBuild2(
@@ -750,9 +768,10 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
      * @throws ExecutionException 
      * @throws InterruptedException 
      */
+    @Test
     public void testPerformError() throws IOException, InterruptedException, ExecutionException
     {
-        FreeStyleProject project = createFreeStyleProject("testPerformError1");
+        FreeStyleProject project = j.createFreeStyleProject("testPerformError1");
         String toJobName = "JobCopiedTo";
         FreeStyleProject toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
         if(toJob != null)
@@ -958,7 +977,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         // To job exists, and not overwrite.
         {
-            FreeStyleProject existJob = createFreeStyleProject("testPerformError2");
+            FreeStyleProject existJob = j.createFreeStyleProject("testPerformError2");
             
             JobcopyBuilder target = new JobcopyBuilder(project.getName(), existJob.getName(), false, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
@@ -997,9 +1016,10 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
     }
     
     // Test the behavior with AdditionalFileset
+    @Test
     public void testPerformWithAdditionalFileset() throws IOException, InterruptedException, FormException, ExecutionException
     {
-        FreeStyleProject fromJob = createFreeStyleProject("testPerformWithAdditionalFileset1");
+        FreeStyleProject fromJob = j.createFreeStyleProject("testPerformWithAdditionalFileset1");
         
         String toJobName = "JobCopiedTo";
         FreeStyleProject toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
@@ -1055,7 +1075,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                     filesetList
             );
             
-            FreeStyleProject project = createFreeStyleProject("testPerformWithAdditionalFileset2");
+            FreeStyleProject project = j.createFreeStyleProject("testPerformWithAdditionalFileset2");
             project.getBuildersList().add(target);
             
             FreeStyleBuild b = project.scheduleBuild2(
@@ -1116,7 +1136,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                     filesetList
             );
             
-            FreeStyleProject project = createFreeStyleProject("testPerformWithAdditionalFileset3");
+            FreeStyleProject project = j.createFreeStyleProject("testPerformWithAdditionalFileset3");
             project.getBuildersList().add(target);
             
             FreeStyleBuild b = project.scheduleBuild2(
@@ -1165,7 +1185,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                         filesetList
                 );
                 
-                FreeStyleProject project = createFreeStyleProject("testPerformWithAdditionalFileset4");
+                FreeStyleProject project = j.createFreeStyleProject("testPerformWithAdditionalFileset4");
                 project.getBuildersList().add(target);
                 
                 FreeStyleBuild b = project.scheduleBuild2(
@@ -1218,7 +1238,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                         filesetList
                 );
                 
-                FreeStyleProject project = createFreeStyleProject("testPerformWithAdditionalFileset5");
+                FreeStyleProject project = j.createFreeStyleProject("testPerformWithAdditionalFileset5");
                 project.getBuildersList().add(target);
                 
                 FreeStyleBuild b = project.scheduleBuild2(
@@ -1272,7 +1292,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                         filesetList
                 );
                 
-                FreeStyleProject project = createFreeStyleProject("testPerformWithAdditionalFileset6");
+                FreeStyleProject project = j.createFreeStyleProject("testPerformWithAdditionalFileset6");
                 project.getBuildersList().add(target);
                 
                 FreeStyleBuild b = project.scheduleBuild2(
@@ -1306,22 +1326,23 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         }
     }
     
+    @Test
     public void testPerformWithFolder() throws Exception
     {
-        Folder folder1 = jenkins.createProject(Folder.class, "folder1");
+        Folder folder1 = j.jenkins.createProject(Folder.class, "folder1");
         Folder subfolder1 = folder1.createProject(Folder.class, "subfolder1");
-        jenkins.createProject(Folder.class, "folder2");
-        createFreeStyleProject("srcJob");
+        j.jenkins.createProject(Folder.class, "folder2");
+        j.createFreeStyleProject("srcJob");
         folder1.createProject(FreeStyleProject.class, "srcJobInFolder");
         subfolder1.createProject(FreeStyleProject.class, "srcJobInSubFolder");
         
         // To a job in a folder
         {
-            FreeStyleProject copyJob = createFreeStyleProject();
+            FreeStyleProject copyJob = j.createFreeStyleProject();
             String src = "srcJob";
             String dest = "folder1/dest1";
-            assertNotNull(jenkins.getItemByFullName(src));
-            assertNull(jenkins.getItemByFullName(dest));
+            assertNotNull(j.jenkins.getItemByFullName(src));
+            assertNull(j.jenkins.getItemByFullName(dest));
             
             copyJob.getBuildersList().add(
                     new JobcopyBuilder(
@@ -1332,19 +1353,19 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                             Collections.<AdditionalFileset>emptyList()
                     )
             );
-            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
-            assertNotNull(jenkins.getItemByFullName(dest));
+            j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            assertNotNull(j.jenkins.getItemByFullName(dest));
             // overwrite
-            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
         }
         
         // From a job in a folder, To a job in a folder
         {
-            FreeStyleProject copyJob = createFreeStyleProject();
+            FreeStyleProject copyJob = j.createFreeStyleProject();
             String src = "folder1/srcJobInFolder";
             String dest = "folder2/dest2";
-            assertNotNull(jenkins.getItemByFullName(src));
-            assertNull(jenkins.getItemByFullName(dest));
+            assertNotNull(j.jenkins.getItemByFullName(src));
+            assertNull(j.jenkins.getItemByFullName(dest));
             
             copyJob.getBuildersList().add(
                     new JobcopyBuilder(
@@ -1355,10 +1376,10 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                             Collections.<AdditionalFileset>emptyList()
                     )
             );
-            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
-            assertNotNull(jenkins.getItemByFullName(dest));
+            j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            assertNotNull(j.jenkins.getItemByFullName(dest));
             // overwrite
-            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
         }
         
         // run in a folder
@@ -1366,8 +1387,8 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             FreeStyleProject copyJob = folder1.createProject(FreeStyleProject.class, "copier3");
             String src = "srcJobInFolder";
             String dest = "dest3";
-            assertNotNull(jenkins.getItemByFullName(String.format("folder1/%s", src)));
-            assertNull(jenkins.getItemByFullName(String.format("folder1/%s", dest)));
+            assertNotNull(j.jenkins.getItemByFullName(String.format("folder1/%s", src)));
+            assertNull(j.jenkins.getItemByFullName(String.format("folder1/%s", dest)));
             
             copyJob.getBuildersList().add(
                     new JobcopyBuilder(
@@ -1378,10 +1399,10 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                             Collections.<AdditionalFileset>emptyList()
                     )
             );
-            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
-            assertNotNull(jenkins.getItemByFullName(String.format("folder1/%s", dest)));
+            j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            assertNotNull(j.jenkins.getItemByFullName(String.format("folder1/%s", dest)));
             // overwrite
-            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
         }
         
         // run in a folder, use subfolders
@@ -1389,8 +1410,8 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             FreeStyleProject copyJob = folder1.createProject(FreeStyleProject.class, "copier4");
             String src = "subfolder1/srcJobInSubFolder";
             String dest = "subfolder1/dest5";
-            assertNotNull(jenkins.getItemByFullName(String.format("folder1/%s", src)));
-            assertNull(jenkins.getItemByFullName(String.format("folder1/%s", dest)));
+            assertNotNull(j.jenkins.getItemByFullName(String.format("folder1/%s", src)));
+            assertNull(j.jenkins.getItemByFullName(String.format("folder1/%s", dest)));
             
             copyJob.getBuildersList().add(
                     new JobcopyBuilder(
@@ -1401,10 +1422,10 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                             Collections.<AdditionalFileset>emptyList()
                     )
             );
-            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
-            assertNotNull(jenkins.getItemByFullName(String.format("folder1/%s", dest)));
+            j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            assertNotNull(j.jenkins.getItemByFullName(String.format("folder1/%s", dest)));
             // overwrite
-            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
         }
         
         // run in a folder, use parent
@@ -1412,8 +1433,8 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
             FreeStyleProject copyJob = folder1.createProject(FreeStyleProject.class, "copier5");
             String src = "../srcJob";
             String dest = "../dest6";
-            assertNotNull(jenkins.getItemByFullName(src.replace("../", "")));
-            assertNull(jenkins.getItemByFullName(dest.replace("../", "")));
+            assertNotNull(j.jenkins.getItemByFullName(src.replace("../", "")));
+            assertNull(j.jenkins.getItemByFullName(dest.replace("../", "")));
             
             copyJob.getBuildersList().add(
                     new JobcopyBuilder(
@@ -1424,19 +1445,19 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                             Collections.<AdditionalFileset>emptyList()
                     )
             );
-            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
-            assertNotNull(jenkins.getItemByFullName(dest.replace("../", "")));
+            j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            assertNotNull(j.jenkins.getItemByFullName(dest.replace("../", "")));
             // overwrite
-            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
         }
         
         // copy a folder
         {
-            FreeStyleProject copyJob = createFreeStyleProject();
+            FreeStyleProject copyJob = j.createFreeStyleProject();
             String src = "folder1";
             String dest = "newfolder";
-            assertNotNull(jenkins.getItemByFullName(src));
-            assertNull(jenkins.getItemByFullName(dest));
+            assertNotNull(j.jenkins.getItemByFullName(src));
+            assertNull(j.jenkins.getItemByFullName(dest));
             
             copyJob.getBuildersList().add(
                     new JobcopyBuilder(
@@ -1447,25 +1468,26 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                             Collections.<AdditionalFileset>emptyList()
                     )
             );
-            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
-            assertNotNull(jenkins.getItemByFullName(dest));
+            j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            assertNotNull(j.jenkins.getItemByFullName(dest));
             // overwrite
-            assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+            j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
         }
     }
-    
+
+    @Test
     public void testPerformWithFolderError() throws Exception
     {
-        createFreeStyleProject("srcJob");
+        j.createFreeStyleProject("srcJob");
         
         // Destination folder does not exist
         {
-            FreeStyleProject copyJob = createFreeStyleProject();
+            FreeStyleProject copyJob = j.createFreeStyleProject();
             String src = "srcJob";
             String dest = "nosuchfolder/dest1";
-            assertNotNull(jenkins.getItemByFullName(src));
-            assertNull(jenkins.getItemByFullName("nosuchfolder"));
-            assertNull(jenkins.getItemByFullName(dest));
+            assertNotNull(j.jenkins.getItemByFullName(src));
+            assertNull(j.jenkins.getItemByFullName("nosuchfolder"));
+            assertNull(j.jenkins.getItemByFullName(dest));
             
             copyJob.getBuildersList().add(
                     new JobcopyBuilder(
@@ -1476,18 +1498,18 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                             Collections.<AdditionalFileset>emptyList()
                     )
             );
-            assertBuildStatus(Result.FAILURE, copyJob.scheduleBuild2(0).get());
+            j.assertBuildStatus(Result.FAILURE, copyJob.scheduleBuild2(0).get());
         }
         
         // Copy into MatrixProject
         {
-            createMatrixProject("matrixtest");
-            FreeStyleProject copyJob = createFreeStyleProject();
+            j.createProject(MatrixProject.class, "matrixtest");
+            FreeStyleProject copyJob = j.createFreeStyleProject();
             String src = "srcJob";
             String dest = "matrixtest/dest1";
-            assertNotNull(jenkins.getItemByFullName(src));
-            assertNull(jenkins.getItemByFullName("nosuchfolder"));
-            assertNull(jenkins.getItemByFullName(dest));
+            assertNotNull(j.jenkins.getItemByFullName(src));
+            assertNull(j.jenkins.getItemByFullName("nosuchfolder"));
+            assertNull(j.jenkins.getItemByFullName(dest));
             
             copyJob.getBuildersList().add(
                     new JobcopyBuilder(
@@ -1498,10 +1520,11 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                             Collections.<AdditionalFileset>emptyList()
                     )
             );
-            assertBuildStatus(Result.FAILURE, copyJob.scheduleBuild2(0).get());
+            j.assertBuildStatus(Result.FAILURE, copyJob.scheduleBuild2(0).get());
         }
     }
     
+    @Test
     public void testView() throws IOException, SAXException
     {
         List<JobcopyOperation> lst = new ArrayList<JobcopyOperation>();
@@ -1512,14 +1535,15 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         ));
         JobcopyBuilder target = new JobcopyBuilder("fromJob", "toJob", false, lst, null);
         
-        FreeStyleProject project = createFreeStyleProject("testView1");
+        FreeStyleProject project = j.createFreeStyleProject("testView1");
         project.getBuildersList().add(target);
         
-        WebClient wc = new WebClient();
+        JenkinsRule.WebClient wc = j.createWebClient();
         wc.getPage(project, "configure");
     }
     
     // https://github.com/ikedam/jobcopy-builder/issues/11
+    @Test
     public void testOverwritingMatrix() throws Exception
     {
         String destProjectName = "destProject";
@@ -1527,7 +1551,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         Axis axis2 = new TextAxis("axis2", "value2-1", "value2-2");
         String combinationFilter = "!(axis1 == \"value1-1\" && axis2 == \"value2-1\")";
         
-        MatrixProject srcProject = createMatrixProject();
+        MatrixProject srcProject = j.createProject(MatrixProject.class);
         srcProject.setAxes(new AxisList(
                 axis1,
                 axis2
@@ -1536,7 +1560,7 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         srcProject.save();
         
-        FreeStyleProject copier = createFreeStyleProject();
+        FreeStyleProject copier = j.createFreeStyleProject();
         copier.getBuildersList().add(new JobcopyBuilder(
                         srcProject.getName(),
                         destProjectName,
@@ -1546,9 +1570,9 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         ));
         copier.save();
         
-        assertBuildStatusSuccess(copier.scheduleBuild2(0));
+        j.assertBuildStatusSuccess(copier.scheduleBuild2(0));
         {
-            MatrixProject p = jenkins.getItemByFullName(destProjectName, MatrixProject.class);
+            MatrixProject p = j.jenkins.getItemByFullName(destProjectName, MatrixProject.class);
             assertNotNull(p);
             assertEquals(combinationFilter, p.getCombinationFilter());
         }
@@ -1559,9 +1583,9 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         
         srcProject.save();
         
-        assertBuildStatusSuccess(copier.scheduleBuild2(0));
+        j.assertBuildStatusSuccess(copier.scheduleBuild2(0));
         {
-            MatrixProject p = jenkins.getItemByFullName(destProjectName, MatrixProject.class);
+            MatrixProject p = j.jenkins.getItemByFullName(destProjectName, MatrixProject.class);
             assertNotNull(p);
             assertNull(p.getCombinationFilter());
         }
@@ -1573,19 +1597,20 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
         srcProject.setCombinationFilter(combinationFilter);
         
         srcProject.save();
-        assertBuildStatusSuccess(copier.scheduleBuild2(0));
+        j.assertBuildStatusSuccess(copier.scheduleBuild2(0));
         {
-            MatrixProject p = jenkins.getItemByFullName(destProjectName, MatrixProject.class);
+            MatrixProject p = j.jenkins.getItemByFullName(destProjectName, MatrixProject.class);
             assertNotNull(p);
             assertEquals(combinationFilter, p.getCombinationFilter());
         }
     }
     
     @Issue("JENKINS-37875")
+    @Test
     public void testAbsoluteToplevelToJobname() throws Exception
     {
-        Folder folder = jenkins.createProject(Folder.class, "folder");
-        createFreeStyleProject("src");
+        Folder folder = j.jenkins.createProject(Folder.class, "folder");
+        j.createFreeStyleProject("src");
         
         FreeStyleProject copyJob = folder.createProject(FreeStyleProject.class, "copier");
         copyJob.getBuildersList().add(
@@ -1597,18 +1622,19 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                         Collections.<AdditionalFileset>emptyList()
                 )
         );
-        assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
-        assertNull(jenkins.getItemByFullName("/folder/dest"));
-        assertNotNull(jenkins.getItemByFullName("/dest"));
-        assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+        j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+        assertNull(j.jenkins.getItemByFullName("/folder/dest"));
+        assertNotNull(j.jenkins.getItemByFullName("/dest"));
+        j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
     }
     
     @Issue("JENKINS-37875")
+    @Test
     public void testAbsoluteSubToJobname() throws Exception
     {
-        Folder folder = jenkins.createProject(Folder.class, "folder");
+        Folder folder = j.jenkins.createProject(Folder.class, "folder");
         Folder subfolder = folder.createProject(Folder.class, "subfolder");
-        createFreeStyleProject("src");
+        j.createFreeStyleProject("src");
         
         FreeStyleProject copyJob = subfolder.createProject(FreeStyleProject.class, "copier");
         copyJob.getBuildersList().add(
@@ -1620,8 +1646,8 @@ public class JobcopyBuilderJenkinsTest extends HudsonTestCase
                         Collections.<AdditionalFileset>emptyList()
                 )
         );
-        assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
-        assertNotNull(jenkins.getItemByFullName("/folder/dest"));
-        assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+        j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
+        assertNotNull(j.jenkins.getItemByFullName("/folder/dest"));
+        j.assertBuildStatusSuccess(copyJob.scheduleBuild2(0));
     }
 }
