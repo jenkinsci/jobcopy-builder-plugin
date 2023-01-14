@@ -45,11 +45,12 @@
   <dependencies>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>matrix-auth</artifactId>
+      <artifactId>matrix-project</artifactId>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>matrix-project</artifactId>
+      <artifactId>matrix-auth</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
