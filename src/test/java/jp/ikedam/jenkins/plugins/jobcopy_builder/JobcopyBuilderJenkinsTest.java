@@ -537,11 +537,6 @@ public class JobcopyBuilderJenkinsTest
         fromJob.disable();
         fromJob.save();
         
-        ParametersAction paramAction = new ParametersAction(
-                new StringParameterValue("fromJobName", fromJob.getName()),
-                new StringParameterValue("toJobName", toJobName)
-        );
-        
         // No variable use.
         {
             List<JobcopyOperation> lst = new ArrayList<JobcopyOperation>();
@@ -555,11 +550,7 @@ public class JobcopyBuilderJenkinsTest
             FreeStyleProject project = j.createFreeStyleProject("testPerform2");
             project.getBuildersList().add(target);
             
-            j.assertBuildStatusSuccess(project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatusSuccess(project.scheduleBuild2(project.getQuietPeriod()));
             
             toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
             assertNotNull("No variable use", toJob);
@@ -584,12 +575,19 @@ public class JobcopyBuilderJenkinsTest
             JobcopyBuilder target = new JobcopyBuilder("${fromJobName}", "${toJobName}", false, lst, null);
             
             FreeStyleProject project = j.createFreeStyleProject("testPerform3");
+            project.addProperty(new ParametersDefinitionProperty(
+                    new StringParameterDefinition("fromJobName", ""),
+                    new StringParameterDefinition("toJobName", "")
+            ));
             project.getBuildersList().add(target);
             
             j.assertBuildStatusSuccess(project.scheduleBuild2(
                     project.getQuietPeriod(),
                     new Cause.UserIdCause(),
-                    paramAction
+                    new ParametersAction(
+                            new StringParameterValue("fromJobName", fromJob.getName()),
+                            new StringParameterValue("toJobName", toJobName)
+                    )
             ));
             
             toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
@@ -615,11 +613,7 @@ public class JobcopyBuilderJenkinsTest
                 FreeStyleProject project = j.createFreeStyleProject("testPerform4");
                 project.getBuildersList().add(target);
                 
-                j.assertBuildStatusSuccess(project.scheduleBuild2(
-                        project.getQuietPeriod(),
-                        new Cause.UserIdCause(),
-                        paramAction
-                ));
+                j.assertBuildStatusSuccess(project.scheduleBuild2(project.getQuietPeriod()));
                 
                 toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
                 assertNotNull("overwrite(create a new job)", toJob);
@@ -649,11 +643,7 @@ public class JobcopyBuilderJenkinsTest
                 FreeStyleProject project = j.createFreeStyleProject("testPerform5");
                 project.getBuildersList().add(target);
                 
-                j.assertBuildStatusSuccess(project.scheduleBuild2(
-                        project.getQuietPeriod(),
-                        new Cause.UserIdCause(),
-                        paramAction
-                ));
+                j.assertBuildStatusSuccess(project.scheduleBuild2(project.getQuietPeriod()));
                 
                 toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
                 assertNotNull("overwrite(overwrite)", toJob);
@@ -677,11 +667,7 @@ public class JobcopyBuilderJenkinsTest
             FreeStyleProject project = j.createFreeStyleProject("testPerform6");
             project.getBuildersList().add(target);
             
-            j.assertBuildStatusSuccess(project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatusSuccess(project.scheduleBuild2(project.getQuietPeriod()));
             
             toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
             assertNotNull("null for jobcopyOperationList", toJob);
@@ -696,11 +682,7 @@ public class JobcopyBuilderJenkinsTest
             FreeStyleProject project = j.createFreeStyleProject("testPerform7");
             project.getBuildersList().add(target);
             
-            j.assertBuildStatusSuccess(project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatusSuccess(project.scheduleBuild2(project.getQuietPeriod()));
             
             toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
             assertNotNull("empty for jobcopyOperationList", toJob);
@@ -731,174 +713,178 @@ public class JobcopyBuilderJenkinsTest
     @Test
     public void testPerformError() throws Exception
     {
-        FreeStyleProject project = j.createFreeStyleProject("testPerformError1");
         String toJobName = "JobCopiedTo";
         FreeStyleProject toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
         if(toJob != null)
         {
             toJob.delete();
         }
-        ParametersAction paramAction = new ParametersAction(
-                new StringParameterValue("EMPTY", ""),
-                new StringParameterValue("NOSUCHJOB", "nosuchjob")
-        );
         
         // From Job Name is null.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
             JobcopyBuilder target = new JobcopyBuilder(null, toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
-            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(project.getQuietPeriod()));
         }
         
         // From Job Name is empty.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
             JobcopyBuilder target = new JobcopyBuilder("", toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
-            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(project.getQuietPeriod()));
         }
         
         // From Job Name is blank.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
             JobcopyBuilder target = new JobcopyBuilder("  ", toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
-            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(project.getQuietPeriod()));
         }
         
         // From Job Name gets empty.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
+            project.addProperty(new ParametersDefinitionProperty(
+                    new StringParameterDefinition(
+                            "EMPTY",
+                            "EMPTY",
+                            "Description"
+                    )
+            ));
             JobcopyBuilder target = new JobcopyBuilder("${EMPTY}", toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
                     project.getQuietPeriod(),
                     new Cause.UserIdCause(),
-                    paramAction
+                    new ParametersAction(new StringParameterValue("EMPTY", ""))
             ));
         }
         
         // From Job Name gets blank.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
+            project.addProperty(new ParametersDefinitionProperty(
+                    new StringParameterDefinition(
+                            "EMPTY",
+                            "EMPTY",
+                            "Description"
+                    )
+            ));
             JobcopyBuilder target = new JobcopyBuilder("  ${EMPTY}  ", toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
-            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(project.getQuietPeriod()));
         }
         
         // To Job Name is null.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
             JobcopyBuilder target = new JobcopyBuilder(project.getName(), null, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
-            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(project.getQuietPeriod()));
         }
         
         // To Job Name is empty.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
             JobcopyBuilder target = new JobcopyBuilder(project.getName(), "", true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
-            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(project.getQuietPeriod()));
        }
         
         // To Job Name is blank.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
             JobcopyBuilder target = new JobcopyBuilder(project.getName(), "  ", true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
-            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(project.getQuietPeriod()));
         }
         
         // To Job Name gets empty.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
+            project.addProperty(new ParametersDefinitionProperty(
+                    new StringParameterDefinition(
+                            "EMPTY",
+                            "EMPTY",
+                            "Description"
+                    )
+            ));
             JobcopyBuilder target = new JobcopyBuilder(project.getName(), "${EMPTY}", true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
                     project.getQuietPeriod(),
                     new Cause.UserIdCause(),
-                    paramAction
+                    new ParametersAction(new StringParameterValue("EMPTY", ""))
             ));
        }
         
         // To Job Name gets blank.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
+            project.addProperty(new ParametersDefinitionProperty(
+                    new StringParameterDefinition(
+                            "EMPTY",
+                            "EMPTY",
+                            "Description"
+                    )
+            ));
             JobcopyBuilder target = new JobcopyBuilder(project.getName(), "  ${EMPTY}  ", true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
                     project.getQuietPeriod(),
                     new Cause.UserIdCause(),
-                    paramAction
+                    new ParametersAction(new StringParameterValue("EMPTY", ""))
             ));
         }
         
         // From job does not exist.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
             JobcopyBuilder target = new JobcopyBuilder("nosuchjob", toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
-            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(project.getQuietPeriod()));
         }
         
         // From job(expanded) does not exist.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
+            project.addProperty(new ParametersDefinitionProperty(
+                    new StringParameterDefinition(
+                            "NOSUCHJOB",
+                            "NOSUCHJOB",
+                            "Description"
+                    )
+            ));
             JobcopyBuilder target = new JobcopyBuilder("${NOSUCHJOB}", toJobName, true, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
             j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
                     project.getQuietPeriod(),
                     new Cause.UserIdCause(),
-                    paramAction
+                    new ParametersAction(new StringParameterValue("NOSUCHJOB", "nosuchjob"))
             ));
         }
         
         // To job exists, and not overwrite.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
             FreeStyleProject existJob = j.createFreeStyleProject("testPerformError2");
             
             JobcopyBuilder target = new JobcopyBuilder(project.getName(), existJob.getName(), false, new ArrayList<JobcopyOperation>(), null);
             project.getBuildersList().add(target);
-            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(project.getQuietPeriod()));
        }
         
         // JobcopyOperation returned error.
         {
+            FreeStyleProject project = j.createFreeStyleProject();
             List<JobcopyOperation> lst = new ArrayList<JobcopyOperation>();
             lst.add(new NullJobcopyOperation());
             JobcopyBuilder target = new JobcopyBuilder(project.getName(), toJobName, true, lst, null);
             project.getBuildersList().add(target);
-            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(project.getQuietPeriod()));
         }
         
         // Failed to create a job
@@ -936,11 +922,6 @@ public class JobcopyBuilderJenkinsTest
         
         fromJob.save();
         
-        ParametersAction paramAction = new ParametersAction(
-                new StringParameterValue("fromJobName", fromJob.getName()),
-                new StringParameterValue("toJobName", toJobName)
-        );
-        
         // Copy all files
         {
             List<JobcopyOperation> opList = new ArrayList<JobcopyOperation>();
@@ -968,11 +949,7 @@ public class JobcopyBuilderJenkinsTest
             FreeStyleProject project = j.createFreeStyleProject("testPerformWithAdditionalFileset2");
             project.getBuildersList().add(target);
             
-            j.assertBuildStatusSuccess(project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatusSuccess(project.scheduleBuild2(project.getQuietPeriod()));
             
             toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
             assertNotNull("Copy all files", toJob);
@@ -1024,11 +1001,7 @@ public class JobcopyBuilderJenkinsTest
             FreeStyleProject project = j.createFreeStyleProject("testPerformWithAdditionalFileset3");
             project.getBuildersList().add(target);
             
-            j.assertBuildStatusSuccess(project.scheduleBuild2(
-                    project.getQuietPeriod(),
-                    new Cause.UserIdCause(),
-                    paramAction
-            ));
+            j.assertBuildStatusSuccess(project.scheduleBuild2(project.getQuietPeriod()));
             
             toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
             assertNotNull("Copy part of files", toJob);
@@ -1068,11 +1041,7 @@ public class JobcopyBuilderJenkinsTest
                 FreeStyleProject project = j.createFreeStyleProject("testPerformWithAdditionalFileset4");
                 project.getBuildersList().add(target);
                 
-                j.assertBuildStatusSuccess(project.scheduleBuild2(
-                        project.getQuietPeriod(),
-                        new Cause.UserIdCause(),
-                        paramAction
-                ));
+                j.assertBuildStatusSuccess(project.scheduleBuild2(project.getQuietPeriod()));
                 
                 toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
                 assertNotNull("Overwrite: Create a job", toJob);
@@ -1116,11 +1085,7 @@ public class JobcopyBuilderJenkinsTest
                 FreeStyleProject project = j.createFreeStyleProject("testPerformWithAdditionalFileset5");
                 project.getBuildersList().add(target);
                 
-                j.assertBuildStatusSuccess(project.scheduleBuild2(
-                        project.getQuietPeriod(),
-                        new Cause.UserIdCause(),
-                        paramAction
-                ));
+                j.assertBuildStatusSuccess(project.scheduleBuild2(project.getQuietPeriod()));
                 
                 toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
                 assertNotNull("Overwrite: not overwrite", toJob);
@@ -1165,11 +1130,7 @@ public class JobcopyBuilderJenkinsTest
                 FreeStyleProject project = j.createFreeStyleProject("testPerformWithAdditionalFileset6");
                 project.getBuildersList().add(target);
                 
-                j.assertBuildStatusSuccess(project.scheduleBuild2(
-                        project.getQuietPeriod(),
-                        new Cause.UserIdCause(),
-                        paramAction
-                ));
+                j.assertBuildStatusSuccess(project.scheduleBuild2(project.getQuietPeriod()));
                 
                 toJob = (FreeStyleProject)Jenkins.getInstance().getItem(toJobName);
                 assertNotNull("Overwrite: overwrite", toJob);
