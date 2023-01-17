@@ -29,27 +29,21 @@ import static org.junit.Assert.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.acegisecurity.Authentication;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
-
-import com.google.common.collect.Sets;
+import org.jvnet.hudson.test.MockAuthorizationStrategy;
+import org.jvnet.hudson.test.MockQueueItemAuthenticator;
 
 import hudson.model.Computer;
 import hudson.model.FreeStyleProject;
 import hudson.model.Item;
 import hudson.model.Label;
-import hudson.model.Queue;
 import hudson.model.Result;
 import hudson.model.User;
-import hudson.security.AuthorizationMatrixProperty;
-import hudson.security.Permission;
-import hudson.security.ProjectMatrixAuthorizationStrategy;
 import jenkins.model.Jenkins;
-import jenkins.security.QueueItemAuthenticator;
 import jenkins.security.QueueItemAuthenticatorConfiguration;
 
 /**
@@ -63,21 +57,9 @@ public class JobcopyBuilderPermissionTest
     @Test
     public void testSystemSucceedCreate() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, Jenkins.ANONYMOUS.getName());
-        pmas.add(Item.CREATE, Jenkins.ANONYMOUS.getName());
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
         // src: can read by anonymous
         // dest: can create by anonymous
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
@@ -90,6 +72,15 @@ public class JobcopyBuilderPermissionTest
             Collections.<AdditionalFileset>emptyList()
         ));
         
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.CREATE).onRoot().to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.READ).onItems(src).to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.EXTENDED_READ).onItems(src).to(Jenkins.ANONYMOUS.getName())
+        );
+        
         j.assertBuildStatusSuccess(p.scheduleBuild2(0));
         
         FreeStyleProject dest = j.jenkins.getItemByFullName("dest", FreeStyleProject.class);
@@ -100,30 +91,13 @@ public class JobcopyBuilderPermissionTest
     @Test
     public void testSystemSucceedOverwrite() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, Jenkins.ANONYMOUS.getName());
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
         // src: can read by anonymous
         // dest: can configure by anonymous
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
         FreeStyleProject dest = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            auths.put(Item.CONFIGURE, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            dest.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         
         FreeStyleProject p = j.createFreeStyleProject();
         p.getBuildersList().add(new JobcopyBuilder(
@@ -133,6 +107,17 @@ public class JobcopyBuilderPermissionTest
             Collections.<JobcopyOperation>emptyList(),
             Collections.<AdditionalFileset>emptyList()
         ));
+        
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to(Jenkins.ANONYMOUS.getName())
+                // .grant(Item.CREATE).onRoot().to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.READ).onItems(src).to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.EXTENDED_READ).onItems(src).to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.READ).onItems(dest).to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.CONFIGURE).onItems(dest).to(Jenkins.ANONYMOUS.getName())
+        );
         
         j.assertBuildStatusSuccess(p.scheduleBuild2(0));
         
@@ -148,30 +133,13 @@ public class JobcopyBuilderPermissionTest
     @Test
     public void testSystemSucceedOverwriteAsCreate() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, Jenkins.ANONYMOUS.getName());
-        pmas.add(Item.CREATE, Jenkins.ANONYMOUS.getName());
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
         // src: can read by anonymous
         // dest: cannot read by anonymous, bu can create by anonymous
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
         FreeStyleProject dest = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet("user1"));     // not by anonymous
-            dest.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         
         FreeStyleProject p = j.createFreeStyleProject();
         p.getBuildersList().add(new JobcopyBuilder(
@@ -181,6 +149,16 @@ public class JobcopyBuilderPermissionTest
             Collections.<JobcopyOperation>emptyList(),
             Collections.<AdditionalFileset>emptyList()
         ));
+        
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.CREATE).onRoot().to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.READ).onItems(src).to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.EXTENDED_READ).onItems(src).to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.READ).onItems(dest).to("user1") // not by anonymous
+        );
         
         j.assertBuildStatusSuccess(p.scheduleBuild2(0));
         
@@ -191,21 +169,9 @@ public class JobcopyBuilderPermissionTest
     @Test
     public void testSystemFailToReadForReadPermission() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, Jenkins.ANONYMOUS.getName());
-        pmas.add(Item.CREATE, Jenkins.ANONYMOUS.getName());
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
         // src: cannot read by anonymous
         // dest: can create by anonymous
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet("user1"));    // not by anonymous!
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
@@ -217,6 +183,15 @@ public class JobcopyBuilderPermissionTest
             Collections.<JobcopyOperation>emptyList(),
             Collections.<AdditionalFileset>emptyList()
         ));
+        
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.CREATE).onRoot().to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.READ).onItems(src).to("user1")  // not by anonymous!
+                .grant(Item.EXTENDED_READ).onItems(src).to(Jenkins.ANONYMOUS.getName())
+        );
         
         j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         
@@ -227,21 +202,9 @@ public class JobcopyBuilderPermissionTest
     @Test
     public void testSystemFailToReadForExtendedReadPermission() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, Jenkins.ANONYMOUS.getName());
-        pmas.add(Item.CREATE, Jenkins.ANONYMOUS.getName());
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
         // src: cannot read by anonymous
         // dest: can create by anonymous
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet("user1"));    // not by anonymous!
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
@@ -253,6 +216,15 @@ public class JobcopyBuilderPermissionTest
             Collections.<JobcopyOperation>emptyList(),
             Collections.<AdditionalFileset>emptyList()
         ));
+        
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.CREATE).onRoot().to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.READ).onItems(src).to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.EXTENDED_READ).onItems(src).to("user1") // not by anonymous!
+        );
         
         j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         
@@ -263,21 +235,9 @@ public class JobcopyBuilderPermissionTest
     @Test
     public void testSystemFailToCreate() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, Jenkins.ANONYMOUS.getName());
-        // pmas.add(Item.CREATE, Jenkins.ANONYMOUS.getName());
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
         // src: can read by anonymous
         // dest: cannot create by anonymous
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
@@ -289,6 +249,15 @@ public class JobcopyBuilderPermissionTest
             Collections.<JobcopyOperation>emptyList(),
             Collections.<AdditionalFileset>emptyList()
         ));
+        
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to(Jenkins.ANONYMOUS.getName())
+                // .grant(Item.CREATE).onRoot().to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.READ).onItems(src).to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.EXTENDED_READ).onItems(src).to(Jenkins.ANONYMOUS.getName())
+        );
         
         j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         
@@ -299,30 +268,13 @@ public class JobcopyBuilderPermissionTest
     @Test
     public void testSystemFailToOverwrite() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, Jenkins.ANONYMOUS.getName());
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
         // src: can read by anonymous
         // dest: cannot configure by anonymous
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
         FreeStyleProject dest = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet(Jenkins.ANONYMOUS.getName()));
-            auths.put(Item.CONFIGURE, Sets.newHashSet("uset1"));        // not by anonymous!
-            dest.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         
         FreeStyleProject p = j.createFreeStyleProject();
         p.getBuildersList().add(new JobcopyBuilder(
@@ -333,52 +285,29 @@ public class JobcopyBuilderPermissionTest
             Collections.<AdditionalFileset>emptyList()
         ));
         
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to(Jenkins.ANONYMOUS.getName())
+                // .grant(Item.CREATE).onRoot().to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.READ).onItems(src).to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.EXTENDED_READ).onItems(src).to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.READ).onItems(dest).to(Jenkins.ANONYMOUS.getName())
+                .grant(Item.CONFIGURE).onItems(dest).to("user1")    // not by anonymous!
+        );
+        
         j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         
         dest = j.jenkins.getItemByFullName(dest.getFullName(), FreeStyleProject.class);
         assertNotEquals("test", dest.getAssignedLabelString());
     }
     
-    public static class SpecificUserQueueItemAuthenticator extends QueueItemAuthenticator
-    {
-        private final Authentication auth;
-        
-        public SpecificUserQueueItemAuthenticator(Authentication auth)
-        {
-            this.auth = auth;
-        }
-        
-        @Override
-        public Authentication authenticate(Queue.Item item)
-        {
-            return auth;
-        }
-    }
-    
     @Test
     public void testUserSucceedCreate() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, "user1");
-        pmas.add(Item.CREATE, "user1");
-        pmas.add(Computer.BUILD, "user1");
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
-            new SpecificUserQueueItemAuthenticator(User.get("user1").impersonate())
-        );
-        
         // src: can read by user1
         // dest: can create by user1
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet("user1"));
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet("user1"));
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
@@ -390,6 +319,23 @@ public class JobcopyBuilderPermissionTest
             Collections.<JobcopyOperation>emptyList(),
             Collections.<AdditionalFileset>emptyList()
         ));
+        
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to("user1")
+                .grant(Item.CREATE).onRoot().to("user1")
+                .grant(Computer.BUILD).onRoot().to("user1")
+                .grant(Item.READ).onItems(src).to("user1")
+                .grant(Item.EXTENDED_READ).onItems(src).to("user1")
+        );
+        
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
+        Map<String, Authentication> jobsToUsers = new HashMap<>();
+        jobsToUsers.put(p.getFullName(), User.get("user1").impersonate());
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
+            new MockQueueItemAuthenticator(jobsToUsers)
+        );
         
         j.assertBuildStatusSuccess(p.scheduleBuild2(0));
         
@@ -401,36 +347,13 @@ public class JobcopyBuilderPermissionTest
     @Test
     public void testUserSucceedOverwrite() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, "user1");
-        pmas.add(Computer.BUILD, "user1");
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
-            new SpecificUserQueueItemAuthenticator(User.get("user1").impersonate())
-        );
-        
         // src: can read by user1
         // dest: can configure by user1
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet("user1"));
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet("user1"));
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
         FreeStyleProject dest = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet("user1"));
-            auths.put(Item.CONFIGURE, Sets.newHashSet("user1"));
-            dest.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         
         FreeStyleProject p = j.createFreeStyleProject();
         p.getBuildersList().add(new JobcopyBuilder(
@@ -440,6 +363,25 @@ public class JobcopyBuilderPermissionTest
             Collections.<JobcopyOperation>emptyList(),
             Collections.<AdditionalFileset>emptyList()
         ));
+        
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to("user1")
+                // .grant(Item.CREATE).onRoot().to("user1")
+                .grant(Computer.BUILD).onRoot().to("user1")
+                .grant(Item.READ).onItems(src).to("user1")
+                .grant(Item.EXTENDED_READ).onItems(src).to("user1")
+                .grant(Item.READ).onItems(dest).to("user1")
+                .grant(Item.CONFIGURE).onItems(dest).to("user1")
+        );
+        
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
+        Map<String, Authentication> jobsToUsers = new HashMap<>();
+        jobsToUsers.put(p.getFullName(), User.get("user1").impersonate());
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
+            new MockQueueItemAuthenticator(jobsToUsers)
+        );
         
         j.assertBuildStatusSuccess(p.scheduleBuild2(0));
         
@@ -455,36 +397,13 @@ public class JobcopyBuilderPermissionTest
     @Test
     public void testUserSucceedOverwriteAsCreate() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, "user1");
-        pmas.add(Item.CREATE, "user1");
-        pmas.add(Computer.BUILD, "user1");
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
-            new SpecificUserQueueItemAuthenticator(User.get("user1").impersonate())
-        );
-        
         // src: can read by user1
         // dest: can configure by user1
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet("user1"));
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet("user1"));
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
         FreeStyleProject dest = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet("user2"));     // not by user1
-            dest.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         
         FreeStyleProject p = j.createFreeStyleProject();
         p.getBuildersList().add(new JobcopyBuilder(
@@ -494,6 +413,24 @@ public class JobcopyBuilderPermissionTest
             Collections.<JobcopyOperation>emptyList(),
             Collections.<AdditionalFileset>emptyList()
         ));
+        
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to("user1")
+                .grant(Item.CREATE).onRoot().to("user1")
+                .grant(Computer.BUILD).onRoot().to("user1")
+                .grant(Item.READ).onItems(src).to("user1")
+                .grant(Item.EXTENDED_READ).onItems(src).to("user1")
+                .grant(Item.READ).onItems(dest).to("user2") // not by user1
+        );
+        
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
+        Map<String, Authentication> jobsToUsers = new HashMap<>();
+        jobsToUsers.put(p.getFullName(), User.get("user1").impersonate());
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
+            new MockQueueItemAuthenticator(jobsToUsers)
+        );
         
         j.assertBuildStatusSuccess(p.scheduleBuild2(0));
         
@@ -504,27 +441,9 @@ public class JobcopyBuilderPermissionTest
     @Test
     public void testUserFailToReadForReadPermission() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, "user1");
-        pmas.add(Item.CREATE, "user1");
-        pmas.add(Computer.BUILD, "user1");
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
-            new SpecificUserQueueItemAuthenticator(User.get("user1").impersonate())
-        );
-        
         // src: cannot read by user1
         // dest: can create by user1
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet("user2"));    // not by user1!
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet("user1"));
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
@@ -536,6 +455,23 @@ public class JobcopyBuilderPermissionTest
             Collections.<JobcopyOperation>emptyList(),
             Collections.<AdditionalFileset>emptyList()
         ));
+        
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to("user1")
+                .grant(Item.CREATE).onRoot().to("user1")
+                .grant(Computer.BUILD).onRoot().to("user1")
+                .grant(Item.READ).onItems(src).to("user2")  // not by user1!
+                .grant(Item.EXTENDED_READ).onItems(src).to("user1")
+        );
+        
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
+        Map<String, Authentication> jobsToUsers = new HashMap<>();
+        jobsToUsers.put(p.getFullName(), User.get("user1").impersonate());
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
+            new MockQueueItemAuthenticator(jobsToUsers)
+        );
         
         j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         
@@ -546,27 +482,9 @@ public class JobcopyBuilderPermissionTest
     @Test
     public void testUserFailToReadForExtendedReadPermission() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, "user1");
-        pmas.add(Item.CREATE, "user1");
-        pmas.add(Computer.BUILD, "user1");
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
-            new SpecificUserQueueItemAuthenticator(User.get("user1").impersonate())
-        );
-        
         // src: cannot read by user1
         // dest: can create by user1
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet("user1"));
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet("user2"));    // not by user1!
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
@@ -578,6 +496,23 @@ public class JobcopyBuilderPermissionTest
             Collections.<JobcopyOperation>emptyList(),
             Collections.<AdditionalFileset>emptyList()
         ));
+        
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to("user1")
+                .grant(Item.CREATE).onRoot().to("user1")
+                .grant(Computer.BUILD).onRoot().to("user1")
+                .grant(Item.READ).onItems(src).to("user1")
+                .grant(Item.EXTENDED_READ).onItems(src).to("user2") // not by user1!
+        );
+        
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
+        Map<String, Authentication> jobsToUsers = new HashMap<>();
+        jobsToUsers.put(p.getFullName(), User.get("user1").impersonate());
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
+            new MockQueueItemAuthenticator(jobsToUsers)
+        );
         
         j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         
@@ -588,27 +523,9 @@ public class JobcopyBuilderPermissionTest
     @Test
     public void testUserFailToCreate() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, "user1");
-        // pmas.add(Item.CREATE, "user1");
-        pmas.add(Computer.BUILD, "user1");
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
-            new SpecificUserQueueItemAuthenticator(User.get("user1").impersonate())
-        );
-        
         // src: can read by user1
         // dest: cannot create by user1
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet("user1"));
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet("user1"));
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
@@ -621,6 +538,23 @@ public class JobcopyBuilderPermissionTest
             Collections.<AdditionalFileset>emptyList()
         ));
         
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to("user1")
+                // .grant(Item.CREATE).onRoot().to("user1")
+                .grant(Computer.BUILD).onRoot().to("user1")
+                .grant(Item.READ).onItems(src).to("user1")
+                .grant(Item.EXTENDED_READ).onItems(src).to("user1")
+        );
+        
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
+        Map<String, Authentication> jobsToUsers = new HashMap<>();
+        jobsToUsers.put(p.getFullName(), User.get("user1").impersonate());
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
+            new MockQueueItemAuthenticator(jobsToUsers)
+        );
+        
         j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         
         FreeStyleProject dest = j.jenkins.getItemByFullName("dest", FreeStyleProject.class);
@@ -630,36 +564,13 @@ public class JobcopyBuilderPermissionTest
     @Test
     public void testUserFailToOverwrite() throws Exception
     {
-        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
-        ProjectMatrixAuthorizationStrategy pmas = new ProjectMatrixAuthorizationStrategy();
-        pmas.add(Jenkins.READ, "user1");
-        pmas.add(Computer.BUILD, "user1");
-        j.jenkins.setAuthorizationStrategy(pmas);
-        
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
-            new SpecificUserQueueItemAuthenticator(User.get("user1").impersonate())
-        );
-        
         // src: can read by user1
         // dest: cannot configure by user1
         FreeStyleProject src = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet("user1"));
-            auths.put(Item.EXTENDED_READ, Sets.newHashSet("user1"));
-            src.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
         FreeStyleProject dest = j.createFreeStyleProject();
-        {
-            Map<Permission, Set<String>> auths = new HashMap<Permission, Set<String>>();
-            auths.put(Item.READ, Sets.newHashSet("user1"));
-            auths.put(Item.CONFIGURE, Sets.newHashSet("uset2"));        // not by user1!
-            dest.addProperty(new AuthorizationMatrixProperty(auths));
-        }
         
         FreeStyleProject p = j.createFreeStyleProject();
         p.getBuildersList().add(new JobcopyBuilder(
@@ -669,6 +580,25 @@ public class JobcopyBuilderPermissionTest
             Collections.<JobcopyOperation>emptyList(),
             Collections.<AdditionalFileset>emptyList()
         ));
+        
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        j.jenkins.setAuthorizationStrategy(
+            new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).onRoot().to("user1")
+                // .grant(Item.CREATE).onRoot().to("user1")
+                .grant(Computer.BUILD).onRoot().to("user1")
+                .grant(Item.READ).onItems(src).to("user1")
+                .grant(Item.EXTENDED_READ).onItems(src).to("user1")
+                .grant(Item.READ).onItems(dest).to("user1")
+                .grant(Item.CONFIGURE).onItems(dest).to("user2")    // not by user1!
+        );
+        
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().clear();
+        Map<String, Authentication> jobsToUsers = new HashMap<>();
+        jobsToUsers.put(p.getFullName(), User.get("user1").impersonate());
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().add(
+            new MockQueueItemAuthenticator(jobsToUsers)
+        );
         
         j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         
