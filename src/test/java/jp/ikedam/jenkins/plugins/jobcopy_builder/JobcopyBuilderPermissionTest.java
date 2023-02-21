@@ -127,19 +127,20 @@ public class JobcopyBuilderPermissionTest
     
     /**
      * If a user has CREATE permission but READ permission,
-     * succeeds to overwrite as creating.
-     * This happens also when you call createItem REST api.
+     * fails to overwrite nor creating (SECURITY-321).
      */
     @Test
-    public void testSystemSucceedOverwriteAsCreate() throws Exception
+    public void testSystemFailToOverwriteNorCreate() throws Exception
     {
         // src: can read by anonymous
-        // dest: cannot read by anonymous, bu can create by anonymous
+        // dest: cannot read by anonymous, but can create by anonymous
         FreeStyleProject src = j.createFreeStyleProject();
         src.setAssignedLabel(Label.get("test"));
         src.save();
         
         FreeStyleProject dest = j.createFreeStyleProject();
+        dest.setAssignedLabel(Label.get("unchanged"));
+        dest.save();
         
         FreeStyleProject p = j.createFreeStyleProject();
         p.getBuildersList().add(new JobcopyBuilder(
@@ -160,10 +161,10 @@ public class JobcopyBuilderPermissionTest
                 .grant(Item.READ).onItems(dest).to("user1") // not by anonymous
         );
         
-        j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+        j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
         
         dest = j.jenkins.getItemByFullName(dest.getFullName(), FreeStyleProject.class);
-        assertEquals("test", dest.getAssignedLabelString());
+        assertEquals("unchanged", dest.getAssignedLabelString());
     }
     
     @Test
@@ -391,11 +392,10 @@ public class JobcopyBuilderPermissionTest
     
     /**
      * If a user has CREATE permission but READ permission,
-     * succeeds to overwrite as creating.
-     * This happens also when you call createItem REST api.
+     * fails to overwrite nor creating (SECURITY-321).
      */
     @Test
-    public void testUserSucceedOverwriteAsCreate() throws Exception
+    public void testUserFailToOverwriteNorCreate() throws Exception
     {
         // src: can read by user1
         // dest: can configure by user1
@@ -404,6 +404,8 @@ public class JobcopyBuilderPermissionTest
         src.save();
         
         FreeStyleProject dest = j.createFreeStyleProject();
+        dest.setAssignedLabel(Label.get("unchanged"));
+        dest.save();
         
         FreeStyleProject p = j.createFreeStyleProject();
         p.getBuildersList().add(new JobcopyBuilder(
@@ -432,10 +434,10 @@ public class JobcopyBuilderPermissionTest
             new MockQueueItemAuthenticator(jobsToUsers)
         );
         
-        j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+        j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
         
         dest = j.jenkins.getItemByFullName(dest.getFullName(), FreeStyleProject.class);
-        assertEquals("test", dest.getAssignedLabelString());
+        assertEquals("unchanged", dest.getAssignedLabelString());
     }
     
     @Test
