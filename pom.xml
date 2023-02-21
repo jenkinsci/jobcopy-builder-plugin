@@ -3,7 +3,8 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>2.37</version>
+    <version>4.51</version>
+    <relativePath></relativePath>
   </parent>
 
   <groupId>jp.ikedam.jenkins.plugins</groupId>
@@ -38,90 +39,40 @@
   </licenses>
   
   <properties>
-    <!-- QueueItemAuthenticator is since 1.520 -->
-    <jenkins.version>1.532</jenkins.version>
-    <jenkins-test-harness.version>1.532</jenkins-test-harness.version>
-    <java.level>6</java.level>
+    <jenkins.version>2.346.3</jenkins.version>
   </properties>
   
   <dependencies>
     <dependency>
-      <!-- The one depended by Jenkins 1.532 to avoid NoSuchMethodError of jenkins-test-harness -->
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.13.1</version>
-      <scope>test</scope>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>matrix-project</artifactId>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>cloudbees-folder</artifactId>
-      <version>4.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <!--Depended by cloudbees-folder, to suppress annoying messages on tests-->
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>credentials</artifactId>
-      <version>1.8.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>promoted-builds</artifactId>
-      <version>2.8</version>
       <scope>test</scope>
-      <exclusions>
-        <!-- Use the one injected via jenkins-test-harness-1.532 -->
-        <exclusion>
-          <groupId>org.jenkins-ci.main</groupId>
-          <artifactId>maven-plugin</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <!-- JENKINS-18537 (fixed in Jenkins 1.557 or 1554.1 -->
-    <dependency>
-      <groupId>org.jvnet.hudson</groupId>
-      <artifactId>xstream</artifactId>
-      <version>1.4.7-jenkins-1</version>
-      <scope>test</scope>
+      <version>892.vd6219fc0a_efb</version>
     </dependency>
   </dependencies>
+
   <dependencyManagement>
-    <!-- To resolve RequireUpperBoundDeps errors -->
     <dependencies>
       <dependency>
-        <groupId>commons-io</groupId>
-        <artifactId>commons-io</artifactId>
-        <version>2.2</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.ant</groupId>
-        <artifactId>ant</artifactId>
-        <version>1.9.15</version>
+        <groupId>io.jenkins.tools.bom</groupId>
+        <artifactId>bom-2.346.x</artifactId>
+        <version>1750.v0071fa_4c4a_e3</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
   
-  <build>
-    <plugins>
-      <plugin>
-          <groupId>org.jenkins-ci.tools</groupId>
-          <artifactId>maven-hpi-plugin</artifactId>
-          <extensions>true</extensions>
-          <configuration>
-              <compatibleSinceVersion>1.4.0</compatibleSinceVersion>
-          </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <!-- jenkins-test-harness < 1.545 doesn't support concurrent tests. -->
-          <forkCount>1</forkCount>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
   <repositories>
     <repository>

@@ -351,16 +351,19 @@ public class JobcopyBuilder extends Builder
             InputStream is = new ByteArrayInputStream(jobConfigXmlString.getBytes(encoding));
             
             String combinationFilter = null;
-            if(target instanceof MatrixProject)
+            if (Jenkins.getInstance().getPlugin("matrix-project") != null)
             {
-                MatrixProject matrix = (MatrixProject)target;
-                // Workaround for the case combinationFilter is removed.
-                // In that case, updateByXml does not update combinationFilter,
-                // for combinationFilter is not written in XML.
-                // So reset it here in advance. 
-                // It will be overwritten if defined.
-                combinationFilter = matrix.getCombinationFilter();
-                matrix.setCombinationFilter(null);
+                if(target instanceof MatrixProject)
+                {
+                    MatrixProject matrix = (MatrixProject)target;
+                    // Workaround for the case combinationFilter is removed.
+                    // In that case, updateByXml does not update combinationFilter,
+                    // for combinationFilter is not written in XML.
+                    // So reset it here in advance. 
+                    // It will be overwritten if defined.
+                    combinationFilter = matrix.getCombinationFilter();
+                    matrix.setCombinationFilter(null);
+                }
             }
             
             try
@@ -369,13 +372,16 @@ public class JobcopyBuilder extends Builder
             }
             catch(IOException e)
             {
-                if(combinationFilter != null)
+                if (Jenkins.getInstance().getPlugin("matrix-project") != null)
                 {
-                    // recover combinationFilter.
-                    MatrixProject matrix = (MatrixProject)target;
-                    matrix.setCombinationFilter(combinationFilter);
+                    if(combinationFilter != null)
+                    {
+                        // recover combinationFilter.
+                        MatrixProject matrix = (MatrixProject)target;
+                        matrix.setCombinationFilter(combinationFilter);
+                    }
+                    throw e;
                 }
-                throw e;
             }
         }
         
