@@ -34,7 +34,7 @@ import hudson.model.FreeStyleProject;
 import org.jvnet.hudson.test.HudsonTestCase;
 import org.xml.sax.SAXException;
 
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import org.htmlunit.html.HtmlPage;
 
 /**
  * Tests for CopiedjobinfoAction, corresponded to Jenkins.
